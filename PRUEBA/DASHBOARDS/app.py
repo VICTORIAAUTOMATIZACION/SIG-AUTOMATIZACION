@@ -25,9 +25,9 @@ def leer_sql(ruta):
     return [[v.strip().strip("'") for v in match.split(',')] for match in matches]
 
 try:
-    ruta_departamentos = '/workspaces/GIT_PRUEBA_SIG/PRUEBA/DASHBOARDS/departamentos.sql'
-    ruta_provincias = '/workspaces/GIT_PRUEBA_SIG/PRUEBA/DASHBOARDS/provincias.sql'
-    ruta_distritos = '/workspaces/GIT_PRUEBA_SIG/PRUEBA/DASHBOARDS/distritos.sql'
+    ruta_departamentos = '/workspaces/SIG-AUTOMATIZACION/PRUEBA/DASHBOARDS/departamentos.sql'
+    ruta_provincias = '/workspaces/SIG-AUTOMATIZACION/PRUEBA/DASHBOARDS/provincias.sql'
+    ruta_distritos = '/workspaces/SIG-AUTOMATIZACION/PRUEBA/DASHBOARDS/distritos.sql'
     print("Cargando datos SQL para todo el Perú...")
     depa_data, prov_data, dist_data = leer_sql(ruta_departamentos), leer_sql(ruta_provincias), leer_sql(ruta_distritos)
     if not all([depa_data, prov_data, dist_data]): raise ValueError("Archivos SQL no encontrados.")

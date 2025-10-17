@@ -16,7 +16,7 @@ import datetime
 import matplotlib.colors as mcolors
 
 # --- RUTA BASE ORIGINAL ---
-ruta_base = "/workspaces/GIT_PRUEBA_SIG/PRUEBA"
+ruta_base = "/workspaces/SIG-AUTOMATIZACION/PRUEBA"
 
 AMARILLO_CLARO = "#FFEE58"
 

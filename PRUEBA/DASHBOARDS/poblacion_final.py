@@ -16,7 +16,7 @@ from matplotlib.lines import Line2D
 import datetime
 
 # --- RUTA BASE ---
-ruta_base = "/workspaces/GIT_PRUEBA_SIG/PRUEBA"
+ruta_base = "/workspaces/SIG-AUTOMATIZACION/PRUEBA"
 AMARILLO_CLARO = "#FFEE58"
 
 # ════════════════════════════════════════════════════════════════════════
