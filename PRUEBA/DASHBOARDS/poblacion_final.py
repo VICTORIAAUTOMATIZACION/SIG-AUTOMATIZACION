@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""poblacion_final.py - Adaptado para integración con Dashboard"""
+"""poblacion_final.py - VERSIÓN CORREGIDA CON RÍOS Y VÍAS VECINALES VISIBLES"""
 
 import geopandas as gpd
 import matplotlib.pyplot as plt
@@ -38,54 +38,44 @@ def cargar_centros_poblados():
         except Exception as e:
             print(f"❌ Error cargando desde ruta directa: {e}")
 
-    # Buscar recursivamente
-    print("🔍 Buscando archivo de centros poblados recursivamente...")
-    for root, dirs, files in os.walk(f"{ruta_base}/DATA"):
-        for file in files:
-            if file.endswith(".shp") and any(palabra in file.lower() for palabra in ["centro", "poblad", "ccpp"]):
-                ruta_cp = os.path.join(root, file)
-                print(f"   🔍 Intentando: {ruta_cp}")
-                try:
-                    gdf_cp = gpd.read_file(ruta_cp)
-                    if gdf_cp.crs is None:
-                        gdf_cp.set_crs(epsg=4326, inplace=True)
-                    gdf_cp = gdf_cp.to_crs(epsg=3857)
-                    print(f"✅ Centros Poblados cargados desde: {ruta_cp}")
-                    print(f"   📊 Total de registros: {len(gdf_cp)}")
-                    return gdf_cp
-                except Exception as e:
-                    print(f"   ⚠️ Error: {e}")
-                    continue
-
     print(f"❌ No se encontraron centros poblados en {ruta_base}/DATA")
     return None
 
 # ════════════════════════════════════════════════════════════════════════
-# FUNCIÓN PARA CARGAR RÍOS
+# FUNCIÓN PARA CARGAR RÍOS - RUTA DIRECTA
 # ════════════════════════════════════════════════════════════════════════
 def cargar_rios():
-    """Carga el shapefile de ríos"""
-    ruta_directa = f"{ruta_base}/DATA/MAPA DE UBICACION/RIOS/Rios_lineal_IGN_IDEP_geogpsperu_SuyoPomalia.shp"
-
+    """Carga el shapefile de ríos desde ruta directa"""
+    ruta_directa = "/workspaces/SIG-AUTOMATIZACION/PRUEBA/DATA/MAPA DE UBICACION/RIOS/Rios_lineal_IGN_IDEP_geogpsperu_SuyoPomalia.shp"
+    
     if os.path.exists(ruta_directa):
         try:
+            print(f"📂 Ríos encontrado en: {ruta_directa}")
             gdf_rios = gpd.read_file(ruta_directa)
+            print(f"   → CRS original: {gdf_rios.crs}")
+            print(f"   → Registros totales: {len(gdf_rios)}")
+            
             if gdf_rios.crs is None:
                 gdf_rios.set_crs(epsg=4326, inplace=True)
+                print(f"   → Asignado CRS 4326")
+            
             gdf_rios = gdf_rios.to_crs(epsg=3857)
-            print(f"✅ Ríos cargados: {len(gdf_rios)} registros")
+            print(f"✅ Ríos cargados y proyectados: {len(gdf_rios)} registros")
             return gdf_rios
         except Exception as e:
-            print(f"⚠️ Error cargando ríos: {e}")
+            print(f"❌ Error cargando ríos: {e}")
+            import traceback
+            traceback.print_exc()
+    else:
+        print(f"❌ Archivo de ríos NO encontrado en: {ruta_directa}")
+    
     return None
 
 # ════════════════════════════════════════════════════════════════════════
-# FUNCIÓN PARA CARGAR VÍAS
+# FUNCIÓN PARA CARGAR VÍAS - RUTAS DIRECTAS
 # ════════════════════════════════════════════════════════════════════════
 def cargar_vias():
-    """Carga los shapefiles de vías (nacional, departamental, vecinal)"""
-    base_vias = f"{ruta_base}/DATA/MAPA DE UBICACION/VIAS"
-
+    """Carga los shapefiles de vías desde rutas directas"""
     vias = {
         'nacional': None,
         'departamental': None,
@@ -93,23 +83,24 @@ def cargar_vias():
     }
 
     rutas = {
-        'nacional': f"{base_vias}/VIA NACIONAL/red_vial_nacional_dic18.shp",
-        'departamental': f"{base_vias}/VIA DEPARTAMENTAL/red_vial_departamental_dic18.shp",
-        'vecinal': f"{base_vias}/VIA VECINAL/red_vial_vecinal_dic18.shp"
+        'nacional': f"{ruta_base}/DATA/MAPA DE UBICACION/VIAS/VIA NACIONAL/red_vial_nacional_dic18.shp",
+        'departamental': f"{ruta_base}/DATA/MAPA DE UBICACION/VIAS/VIA DEPARTAMENTAL/red_vial_departamental_dic18.shp",
+        'vecinal': f"{ruta_base}/DATA/MAPA DE UBICACION/VIAS/VIA VECINAL/red_vial_vecinal_dic18.shp"
     }
 
     for tipo, ruta in rutas.items():
         if os.path.exists(ruta):
             try:
+                print(f"📂 Vía {tipo} encontrada en: {ruta}")
                 gdf = gpd.read_file(ruta)
                 if gdf.crs is None:
                     gdf.set_crs(epsg=4326, inplace=True)
                 vias[tipo] = gdf.to_crs(epsg=3857)
                 print(f"✅ Vías {tipo}: {len(vias[tipo])} registros")
             except Exception as e:
-                print(f"⚠️ Error cargando vías {tipo}: {e}")
+                print(f"❌ Error cargando vías {tipo}: {e}")
         else:
-            print(f"⚠️ No se encontró archivo de vías {tipo}")
+            print(f"❌ Archivo de vías {tipo} NO encontrado en: {ruta}")
 
     return vias
 
@@ -377,7 +368,7 @@ def generar_mapa_poblacion(nombre_usuario, departamento_sel, provincia_sel, dist
         return None
 
     # --- CARGAR CAPAS ADICIONALES ---
-    print("\n😀 Cargando centros poblados, ríos y vías...")
+    print("\n📦 Cargando centros poblados, ríos y vías...")
     gdf_centros_poblados = cargar_centros_poblados()
     gdf_rios = cargar_rios()
     vias = cargar_vias()
@@ -390,13 +381,13 @@ def generar_mapa_poblacion(nombre_usuario, departamento_sel, provincia_sel, dist
         if col_cp_name:
             print(f"   ✅ Columna de nombre CP identificada: {col_cp_name}")
 
-    # --- RECORTAR CAPAS AL DISTRITO ---
+    # --- RECORTAR CAPAS AL DISTRITO Y BUFFER ---
+    print("\n✂️ Recortando y procesando capas...")
     gdf_centros_clip = None
     gdf_rios_clip = None
     vias_clip = {'nacional': None, 'departamental': None, 'vecinal': None}
 
     if gdf_centros_poblados is not None and not gdf_distrito.empty:
-        print("✂️ Recortando centros poblados al área del distrito...")
         try:
             gdf_centros_clip = gpd.clip(gdf_centros_poblados, gdf_distrito)
             if not gdf_centros_clip.empty:
@@ -406,30 +397,44 @@ def generar_mapa_poblacion(nombre_usuario, departamento_sel, provincia_sel, dist
         except Exception as e:
             print(f"❌ Error al recortar centros poblados: {e}")
 
-    # Calcular bbox del distrito
+    # Calcular bbox del distrito con buffer
     minx, miny, maxx, maxy = gdf_distrito.total_bounds
     buffer_factor = 0.15
     buffer_x = (maxx - minx) * buffer_factor
     buffer_y = (maxy - miny) * buffer_factor
     bbox_temp = (minx - buffer_x, miny - buffer_y, maxx + buffer_x, maxy + buffer_y)
+    bbox_clip = box(*bbox_temp)
 
-    # Recortar ríos y vías por bbox
+    # --- RECORTAR RÍOS POR BBOX (IGUAL QUE VÍAS) ---
     if gdf_rios is not None:
         try:
-            gdf_rios_clip = gdf_rios.clip(box(*bbox_temp))
-            if not gdf_rios_clip.empty:
+            gdf_rios_clip = gpd.clip(gdf_rios, bbox_clip)
+            if gdf_rios_clip is not None and not gdf_rios_clip.empty:
                 print(f"✅ Ríos recortados: {len(gdf_rios_clip)} registros")
+            else:
+                print("⚠️ No hay ríos en el área")
+                gdf_rios_clip = None
         except Exception as e:
-            print(f"⚠️ Error al recortar ríos: {e}")
+            print(f"❌ Error al recortar ríos: {e}")
+            gdf_rios_clip = None
+    else:
+        gdf_rios_clip = None
 
+    # --- RECORTAR VÍAS POR BBOX (IGUAL PARA TODAS) ---
     for tipo in ['nacional', 'departamental', 'vecinal']:
         if vias[tipo] is not None:
             try:
-                vias_clip[tipo] = vias[tipo].clip(box(*bbox_temp))
-                if not vias_clip[tipo].empty:
+                vias_clip[tipo] = gpd.clip(vias[tipo], bbox_clip)
+                if vias_clip[tipo] is not None and not vias_clip[tipo].empty:
                     print(f"✅ Vías {tipo} recortadas: {len(vias_clip[tipo])} registros")
+                else:
+                    print(f"⚠️ No hay vías {tipo} en el área")
+                    vias_clip[tipo] = None
             except Exception as e:
-                print(f"⚠️ Error al recortar vías {tipo}: {e}")
+                print(f"❌ Error al recortar vías {tipo}: {e}")
+                vias_clip[tipo] = None
+        else:
+            vias_clip[tipo] = None
 
     # --- CREAR FIGURA ---
     print("\n🎨 Generando layout del mapa...")
@@ -474,34 +479,43 @@ def generar_mapa_poblacion(nombre_usuario, departamento_sel, provincia_sel, dist
         print(f"   ⚠️ No se pudo cargar el mapa base: {e}")
         ax_main.set_facecolor("#e8e8e8")
 
-    # --- DIBUJAR LÍMITE DEL DISTRITO ---
-    if not gdf_distrito.empty:
-        gdf_distrito.plot(ax=ax_main, facecolor="none", edgecolor="black", linewidth=2,
-                         linestyle='-', alpha=0.9, zorder=10)
-
-    # --- DIBUJAR RÍOS ---
-    if gdf_rios_clip is not None and not gdf_rios_clip.empty:
-        print("   🌊 Dibujando ríos...")
-        gdf_rios_clip.plot(ax=ax_main, color='#00BFFF', linewidth=1.5, zorder=11)
-
-    # --- DIBUJAR VÍAS ---
-    print("   🛣️ Dibujando vías...")
-    if vias_clip['vecinal'] is not None and not vias_clip['vecinal'].empty:
-        vias_clip['vecinal'].plot(ax=ax_main, color='#90EE90', linewidth=1.2, zorder=12)
-
-    if vias_clip['departamental'] is not None and not vias_clip['departamental'].empty:
-        vias_clip['departamental'].plot(ax=ax_main, color='#FF69B4', linewidth=1.8, zorder=13)
-
+    # ════════════════════════════════════════════════════════════════════════
+    # DIBUJAR CAPAS EN ORDEN CORRECTO
+    # ════════════════════════════════════════════════════════════════════════
+    
+    # --- DIBUJAR VÍAS NACIONALES ---
     if vias_clip['nacional'] is not None and not vias_clip['nacional'].empty:
-        vias_clip['nacional'].plot(ax=ax_main, color='#FF0000', linewidth=2.2, zorder=14)
+        print(f"   Dibujando vías nacionales ({len(vias_clip['nacional'])} segmentos)...")
+        vias_clip['nacional'].plot(ax=ax_main, color='#FF0000', linewidth=2.5, zorder=8, alpha=0.9)
+    
+    # --- DIBUJAR VÍAS DEPARTAMENTALES ---
+    if vias_clip['departamental'] is not None and not vias_clip['departamental'].empty:
+        print(f"   Dibujando vías departamentales ({len(vias_clip['departamental'])} segmentos)...")
+        vias_clip['departamental'].plot(ax=ax_main, color='#FF69B4', linewidth=2.0, zorder=9, alpha=0.85)
+    
+    # --- DIBUJAR VÍAS VECINALES (ROSADO PASTEL) ---
+    if vias_clip['vecinal'] is not None and not vias_clip['vecinal'].empty:
+        print(f"   Dibujando vías vecinales ({len(vias_clip['vecinal'])} segmentos)...")
+        vias_clip['vecinal'].plot(ax=ax_main, color='#FFB6D9', linewidth=1.5, zorder=10, alpha=0.85)
+    
+    # --- DIBUJAR RÍOS (CELESTE) ---
+    if gdf_rios_clip is not None and not gdf_rios_clip.empty:
+        print(f"   Dibujando ríos ({len(gdf_rios_clip)} segmentos)...")
+        gdf_rios_clip.plot(ax=ax_main, color='#87CEEB', linewidth=2.5, zorder=11, alpha=0.8)
+    
+    # --- DIBUJAR LÍMITE DEL DISTRITO CON RELLENO VERDE INTENSO ---
+    if not gdf_distrito.empty:
+        print("   🟩 Dibujando límite distrital con relleno verde intenso...")
+        gdf_distrito.plot(ax=ax_main, facecolor='#00AA00', edgecolor='#000000', linewidth=3.0,
+                         linestyle='-', alpha=0.25, zorder=12)
 
-    # --- DIBUJAR CENTROS POBLADOS Y ETIQUETAS ---
+    # --- DIBUJAR CENTROS POBLADOS ---
     if gdf_centros_clip is not None and not gdf_centros_clip.empty and col_cp_name:
-        print("   😀 Dibujando centros poblados y etiquetas...")
-        gdf_centros_clip.plot(ax=ax_main, color='#00FF00', markersize=25, marker='o',
-                             edgecolor='black', linewidth=0.5, zorder=15, alpha=0.85)
+        print(f"   😀 Dibujando centros poblados ({len(gdf_centros_clip)} puntos)...")
+        gdf_centros_clip.plot(ax=ax_main, color='#1B5E20', markersize=50, marker='h',
+                             edgecolor='#0D3D0D', linewidth=1.2, zorder=15, alpha=0.75)
 
-        # Agregar etiquetas
+        # Agregar etiquetas con color verde y delineado negro
         for _, row in gdf_centros_clip.iterrows():
             try:
                 nombre_cp = row[col_cp_name]
@@ -509,9 +523,9 @@ def generar_mapa_poblacion(nombre_usuario, departamento_sel, provincia_sel, dist
                 y_coord = row.geometry.y
 
                 ax_main.text(x_coord, y_coord, nombre_cp,
-                           fontsize=6.5, fontweight='bold', color='black',
+                           fontsize=6.5, fontweight='bold', color='#228B22',
                            ha='left', va='bottom', zorder=16,
-                           path_effects=[path_effects.withStroke(linewidth=2.5, foreground='white')])
+                           path_effects=[path_effects.withStroke(linewidth=2.5, foreground='black')])
             except Exception:
                 pass
 
@@ -526,19 +540,18 @@ def generar_mapa_poblacion(nombre_usuario, departamento_sel, provincia_sel, dist
     fig.canvas.draw()
     add_membrete(ax_membrete, departamento_sel, provincia_sel, distrito_sel, ax_main, fig)
 
-    # --- LEYENDA ACTUALIZADA ---
+    # --- LEYENDA ---
     ax_leyenda = fig.add_subplot(gs_memb_ley[1])
     ax_leyenda.axis('off')
 
     legend_elements = []
 
-    # Agregar elementos según lo que se haya cargado
     if gdf_centros_clip is not None and not gdf_centros_clip.empty:
-        legend_elements.append(Line2D([0], [0], marker='o', color='w', markerfacecolor='#00FF00',
-                                      markeredgecolor='black', markersize=8, label='Centros Poblados'))
+        legend_elements.append(Line2D([0], [0], marker='h', color='w', markerfacecolor='#1B5E20',
+                                      markeredgecolor='#0D3D0D', markersize=8, label='Centros Poblados'))
 
     if gdf_rios_clip is not None and not gdf_rios_clip.empty:
-        legend_elements.append(Line2D([0], [0], color='#00BFFF', lw=2.5, label='Ríos'))
+        legend_elements.append(Line2D([0], [0], color='#87CEEB', lw=2.5, label='Ríos'))
 
     if vias_clip['nacional'] is not None and not vias_clip['nacional'].empty:
         legend_elements.append(Line2D([0], [0], color='#FF0000', lw=2.5, label='Vía Nacional'))
@@ -547,9 +560,10 @@ def generar_mapa_poblacion(nombre_usuario, departamento_sel, provincia_sel, dist
         legend_elements.append(Line2D([0], [0], color='#FF69B4', lw=2.5, label='Vía Departamental'))
 
     if vias_clip['vecinal'] is not None and not vias_clip['vecinal'].empty:
-        legend_elements.append(Line2D([0], [0], color='#90EE90', lw=2.5, label='Vía Vecinal'))
+        legend_elements.append(Line2D([0], [0], color='#FFB6D9', lw=2.5, label='Vía Vecinal'))
 
     legend_elements.extend([
+        Line2D([0], [0], color='#00AA00', lw=2.5, alpha=0.25, label='Zona Estudio'),
         Line2D([0], [0], color='black', lw=2, label='Límite Distrital'),
         Line2D([0], [0], color='black', ls='-', lw=1, label='Grillado UTM')
     ])
