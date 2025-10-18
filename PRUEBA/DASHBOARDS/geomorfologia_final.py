@@ -35,7 +35,6 @@ def generar_paleta_geomorfologia(num_categorias):
     if num_categorias <= len(colores_base):
         return colores_base[:num_categorias]
     else:
-        # Generar colores adicionales si hay más categorías
         colores_extra = []
         for i in range(num_categorias - len(colores_base)):
             h = (i / (num_categorias - len(colores_base))) % 1.0
@@ -48,7 +47,6 @@ def generar_paleta_geomorfologia(num_categorias):
 # ═══════════════════════════════════════════════════════════════════════════════
 def cargar_geomorfologia(departamento):
     """Carga el shapefile de geomorfología según el departamento seleccionado"""
-    # Probar varias rutas posibles
     rutas_posibles = [
         f"{ruta_base}/DATA/GEOMORFOLOGIA/geomorfo_{departamento.lower()}.shp",
         f"{ruta_base}/DATA/GEOMORFOLOGIA/GEOMORFOLOGIAPOR DEPARTAMENTO/geomorfo_{departamento.lower()}.shp",
@@ -58,39 +56,31 @@ def cargar_geomorfologia(departamento):
     
     ruta_geomorfo = None
     for ruta in rutas_posibles:
-        print(f"   🔍 Buscando en: {ruta}")
+        print(f"   Buscando en: {ruta}")
         if os.path.exists(ruta):
             ruta_geomorfo = ruta
             print(f"   ✅ Archivo encontrado!")
             break
     
     if ruta_geomorfo is None:
-        print(f"   ⚠️ No se encontró geomorfología para {departamento} en ninguna ubicación")
-        print(f"   💡 Rutas buscadas:")
-        for ruta in rutas_posibles:
-            print(f"      - {ruta}")
+        print(f"   No se encontró geomorfología para {departamento} en ninguna ubicación")
         return None
     
     try:
         gdf_geomorfo = gpd.read_file(ruta_geomorfo)
-        
-        # Asegurar CRS correcto
         if gdf_geomorfo.crs is None:
             gdf_geomorfo.set_crs(epsg=4326, inplace=True)
-        
-        # Reproyectar a Web Mercator
         gdf_geomorfo = gdf_geomorfo.to_crs(epsg=3857)
-        
         print(f"   ✅ Geomorfología cargada: {len(gdf_geomorfo)} polígonos")
         return gdf_geomorfo
     except Exception as e:
-        print(f"   ❌ Error cargando geomorfología: {e}")
+        print(f"   Error cargando geomorfología: {e}")
         import traceback
         traceback.print_exc()
         return None
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# FUNCIONES AUXILIARES (COPIADAS DE geografica_final.py)
+# FUNCIONES AUXILIARES
 # ═══════════════════════════════════════════════════════════════════════════════
 def add_north_arrow_blanco_completo(ax, xy_pos=(0.93, 0.08), size=0.06):
     x_pos, y_pos = xy_pos
@@ -148,7 +138,6 @@ def add_membrete(ax, dpto, prov, dist, main_map_ax, fig_obj):
     ax.set_ylim(0, 4)
     ax.axis('off')
     
-    # Dibujar rectángulo principal y divisiones
     ax.add_patch(Rectangle((0, 0), 10, 4, fill=False, edgecolor='black', lw=1.2))
     ax.plot([0, 10], [3, 3], color='black', lw=1.2)
     ax.plot([0, 7.5], [1.5, 1.5], color='black', lw=1.2)
@@ -158,11 +147,9 @@ def add_membrete(ax, dpto, prov, dist, main_map_ax, fig_obj):
     
     padding = 0.15
     
-    # Fila superior
     ax.text(0 + padding, 3.5, "MAPA:", fontweight='bold', va='center', fontsize=8)
     ax.text(1.8 + padding, 3.5, info["MAPA"], va='center', fontsize=8)
     
-    # Fila media
     ax.text(0 + padding, 2.6, "DPTO:", fontweight='bold', va='center', fontsize=8)
     ax.text(0 + padding, 2.0, info["DPTO"], va='center', fontsize=8)
     
@@ -172,11 +159,9 @@ def add_membrete(ax, dpto, prov, dist, main_map_ax, fig_obj):
     ax.text(5 + padding, 2.6, "DISTRITO:", fontweight='bold', va='center', fontsize=8)
     ax.text(5 + padding, 2.0, info["DISTRITO"], va='center', fontsize=8)
     
-    # Columna derecha
     ax.text(7.5 + padding, 2.5, "MAPA N°", fontweight='bold', ha='left', va='center', fontsize=8)
     ax.text(7.5 + padding, 0.8, info["MAPA_N"], ha='left', va='center', fontsize=10)
     
-    # Fila inferior
     ax.text(0 + padding, 1.0, "ESCALA:", fontweight='bold', va='center', fontsize=8)
     ax.text(0 + padding, 0.5, info["ESCALA"], va='center', fontsize=8)
     
@@ -193,7 +178,7 @@ def buscar_shapefile(nombre_busqueda):
 def cargar_shapefile(nombre, alias):
     path = buscar_shapefile(nombre)
     if not path:
-        print(f"   ⚠️ No se encontró shapefile: {alias}")
+        print(f"   No se encontró shapefile: {alias}")
         return None
     
     try:
@@ -202,7 +187,7 @@ def cargar_shapefile(nombre, alias):
             gdf.set_crs(epsg=4326, inplace=True)
         return gdf.to_crs(epsg=3857)
     except Exception as e:
-        print(f"   ❌ Error cargando {alias} desde {path}: {e}")
+        print(f"   Error cargando {alias} desde {path}: {e}")
         return None
 
 def grillado_utm_proyectado(ax, bbox, ndiv=8):
@@ -342,26 +327,24 @@ def mapa_ubicacion(ax, gdf_base_map, gdf_context, gdf_focus, titulo, etiqueta, t
     ax.axis('on')
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# 🗺️ FUNCIÓN PRINCIPAL DE GENERACIÓN DE MAPA DE GEOMORFOLOGÍA
+# FUNCIÓN PRINCIPAL DE GENERACIÓN DE MAPA DE GEOMORFOLOGÍA
 # ═══════════════════════════════════════════════════════════════════════════════
 def generar_mapa_geomorfologia(nombre_usuario, departamento_sel, provincia_sel, distrito_sel):
     print("\n" + "="*80)
-    print("🗺️ INICIANDO PROCESO DE GENERACIÓN DE MAPA DE GEOMORFOLOGÍA...")
+    print("INICIANDO PROCESO DE GENERACIÓN DE MAPA DE GEOMORFOLOGÍA...")
     print(f"   - Usuario: {nombre_usuario}")
     print(f"   - Ubicación: {distrito_sel}, {provincia_sel}, {departamento_sel}")
     
-    # --- LÓGICA DE CARPETA DE USUARIO ---
     try:
         carpeta_usuario = os.path.join(ruta_base, "USUARIOS", nombre_usuario)
         carpeta_salida = os.path.join(carpeta_usuario, "MAPA DE GEOMORFOLOGIA")
         os.makedirs(carpeta_salida, exist_ok=True)
         print(f"   - Carpeta de salida verificada: {carpeta_salida}")
     except Exception as e:
-        print(f"❌ Error creando la estructura de carpetas para el usuario: {e}")
+        print(f"Error creando la estructura de carpetas para el usuario: {e}")
         return None
     
-    # --- CARGAR CAPAS BASE ---
-    print("\n📦 Cargando capas base...")
+    print("\n Cargando capas base...")
     gdf_departamentos = cargar_shapefile("departamento", "Departamentos")
     gdf_provincias = cargar_shapefile("provincia", "Provincias")
     gdf_distritos = cargar_shapefile("distrito", "Distritos del Perú")
@@ -370,25 +353,23 @@ def generar_mapa_geomorfologia(nombre_usuario, departamento_sel, provincia_sel, 
         gdf_paises = gpd.read_file(f"{ruta_base}/DATA/MAPA DE UBICACION/PAISES DE SUDAMERICA/Sudamérica.shp").to_crs(3857)
         gdf_oceano = gpd.read_file(f"{ruta_base}/DATA/MAPA DE UBICACION/OCEANO/Océano.shp").to_crs(3857)
     except Exception as e:
-        print(f"⚠️ Error cargando shapefiles de Países u Océano: {e}")
+        print(f"Error cargando shapefiles de Países u Océano: {e}")
         gdf_paises = None
         gdf_oceano = None
     
     if gdf_departamentos is None or gdf_provincias is None or gdf_distritos is None:
-        print("❌ Faltan capas base (departamento, provincia o distrito). Abortando.")
+        print("Faltan capas base (departamento, provincia o distrito). Abortando.")
         return None
     
-    # --- IDENTIFICAR COLUMNAS ---
     col_dpto = next((c for c in ['NOMBDEP', 'DEPARTAMEN'] if c in gdf_departamentos.columns), None)
     col_prov = next((c for c in ['NOMBPROV', 'PROVINCIA'] if c in gdf_provincias.columns), None)
     col_distr = next((c for c in ['NOMBDIST', 'DISTRITO'] if c in gdf_distritos.columns), None)
     
     if not all([col_dpto, col_prov, col_distr]):
-        print("❌ No se pudieron identificar las columnas de nombres en los shapefiles")
+        print("No se pudieron identificar las columnas de nombres en los shapefiles")
         return None
     
-    # --- FILTRAR DATOS DEL ÁREA SELECCIONADA ---
-    print("\n🔍 Filtrando datos del área seleccionada...")
+    print("\n Filtrando datos del área seleccionada...")
     gdf_dpto_sel = gdf_departamentos[gdf_departamentos[col_dpto] == departamento_sel]
     gdf_prov_sel = gdf_provincias[gdf_provincias[col_prov] == provincia_sel]
     gdf_distrito = gdf_distritos[(gdf_distritos[col_distr] == distrito_sel) & 
@@ -396,29 +377,26 @@ def generar_mapa_geomorfologia(nombre_usuario, departamento_sel, provincia_sel, 
     gdf_distritos_en_provincia = gdf_distritos[gdf_distritos[col_prov] == provincia_sel]
     
     if gdf_distrito.empty:
-        print(f"❌ Error: No se pudo encontrar la geometría para el distrito '{distrito_sel}'.")
+        print(f"Error: No se pudo encontrar la geometría para el distrito '{distrito_sel}'.")
         return None
     
     print(f"   ✅ Distrito encontrado con geometría válida")
     
-    # --- CARGAR Y RECORTAR GEOMORFOLOGÍA ---
-    print("\n🌄 Cargando datos de geomorfología...")
+    print("\n Cargando datos de geomorfología...")
     gdf_geomorfologia = cargar_geomorfologia(departamento_sel)
     
     if gdf_geomorfologia is None:
-        print("❌ No se pudo cargar la geomorfología para este departamento")
+        print("No se pudo cargar la geomorfología para este departamento")
         return None
     
-    # Recortar geomorfología al área del distrito
-    print("   ✂️ Recortando geomorfología al área del distrito...")
+    print("   Recortando geomorfología al área del distrito...")
     try:
         gdf_geomorfo_clipped = gpd.clip(gdf_geomorfologia, gdf_distrito)
         
         if gdf_geomorfo_clipped.empty:
-            print("⚠️ No hay unidades geomorfológicas en el área del distrito")
+            print("No hay unidades geomorfológicas en el área del distrito")
             return None
         
-        # Identificar columna de unidades geomorfológicas
         col_geomorfo = None
         for col in ['UNIDAD', 'TIPO', 'GEOMORFOLO', 'DESCRIPCI', 'SIMB', 'NOMBRE']:
             if col in gdf_geomorfo_clipped.columns:
@@ -427,7 +405,7 @@ def generar_mapa_geomorfologia(nombre_usuario, departamento_sel, provincia_sel, 
         
         if col_geomorfo is None:
             col_geomorfo = gdf_geomorfo_clipped.columns[0]
-            print(f"   ⚠️ No se encontró columna estándar, usando: {col_geomorfo}")
+            print(f"   No se encontró columna estándar, usando: {col_geomorfo}")
         
         unidades_geomorfo = sorted(gdf_geomorfo_clipped[col_geomorfo].dropna().unique())
         paleta_geomorfo = generar_paleta_geomorfologia(len(unidades_geomorfo))
@@ -435,18 +413,16 @@ def generar_mapa_geomorfologia(nombre_usuario, departamento_sel, provincia_sel, 
         print(f"   ✅ Geomorfología recortada: {len(unidades_geomorfo)} unidades encontradas")
         
     except Exception as e:
-        print(f"❌ Error al recortar geomorfología: {e}")
+        print(f"Error al recortar geomorfología: {e}")
         import traceback
         traceback.print_exc()
         return None
     
-    # --- CREAR FIGURA ---
-    print("\n🎨 Generando layout del mapa...")
+    print("\n Generando layout del mapa...")
     fig = plt.figure(figsize=(14, 9.9))
     grid = plt.GridSpec(1, 2, width_ratios=[3.0, 1], wspace=0.05)
     gs_izquierda = grid[0, 0].subgridspec(3, 1, height_ratios=[0.08, 3.5, 0.42], hspace=0.08)
     
-    # --- TÍTULO PRINCIPAL ---
     ax_titulo = fig.add_subplot(gs_izquierda[0])
     ax_titulo.text(0.5, 0.5, f"MAPA DE GEOMORFOLOGÍA - DISTRITO DE {distrito_sel.upper()}",
                    ha='center', va='center', fontsize=12, fontweight="normal",
@@ -454,58 +430,67 @@ def generar_mapa_geomorfologia(nombre_usuario, departamento_sel, provincia_sel, 
                             edgecolor='black', linewidth=1.5, alpha=0.95))
     ax_titulo.axis('off')
     
-    # --- MAPA PRINCIPAL ---
     ax_main = fig.add_subplot(gs_izquierda[1])
     
-    # Calcular bbox con buffer
+    # ═══════════════════════════════════════════════════════════════════════════
+    # BBOX CON ASPECT RATIO CONSISTENTE (ESTRUCTURA DE poblacion_final.py)
+    # ═══════════════════════════════════════════════════════════════════════════
     minx, miny, maxx, maxy = gdf_distrito.total_bounds
-    buffer_x = (maxx - minx) * 0.1
-    buffer_y = (maxy - miny) * 0.1
-    bbox_main = (minx - buffer_x, miny - buffer_y, maxx + buffer_x, maxy + buffer_y)
+    buffer_factor = 0.15
+    buffer_x = (maxx - minx) * buffer_factor
+    buffer_y = (maxy - miny) * buffer_factor
+    bbox_temp = (minx - buffer_x, miny - buffer_y, maxx + buffer_x, maxy + buffer_y)
+    
+    aspect_ratio_objetivo = 1.21
+    cx = (bbox_temp[0] + bbox_temp[2]) / 2
+    cy = (bbox_temp[1] + bbox_temp[3]) / 2
+    ancho_actual = bbox_temp[2] - bbox_temp[0]
+    alto_actual = bbox_temp[3] - bbox_temp[1]
+    
+    if (ancho_actual / alto_actual) > aspect_ratio_objetivo:
+        nuevo_alto = ancho_actual / aspect_ratio_objetivo
+        bbox_main = (bbox_temp[0], cy - nuevo_alto/2, bbox_temp[2], cy + nuevo_alto/2)
+    else:
+        nuevo_ancho = alto_actual * aspect_ratio_objetivo
+        bbox_main = (cx - nuevo_ancho/2, bbox_temp[1], cx + nuevo_ancho/2, bbox_temp[3])
+    # ═══════════════════════════════════════════════════════════════════════════
     
     ax_main.set_xlim(bbox_main[0], bbox_main[2])
     ax_main.set_ylim(bbox_main[1], bbox_main[3])
     ax_main.set_aspect('equal', adjustable='box')
     
-    # Agregar basemap
-    print("   📡 Descargando imagen satelital...")
+    print("   Descargando imagen satelital...")
     try:
         ctx.add_basemap(ax_main, source=ctx.providers.Esri.WorldImagery, 
                        attribution=False, zoom='auto')
     except Exception as e:
-        print(f"   ⚠️ No se pudo cargar el mapa base: {e}")
+        print(f"   No se pudo cargar el mapa base: {e}")
         ax_main.set_facecolor("#e8e8e8")
     
-    # --- DIBUJAR GEOMORFOLOGÍA ---
-    print("   🌄 Dibujando unidades geomorfológicas...")
+    print("   Dibujando unidades geomorfológicas...")
     for idx, unidad in enumerate(unidades_geomorfo):
         gdf_unidad = gdf_geomorfo_clipped[gdf_geomorfo_clipped[col_geomorfo] == unidad]
         gdf_unidad.plot(ax=ax_main, color=paleta_geomorfo[idx], edgecolor='black',
                        linewidth=0.5, alpha=0.7, zorder=4)
     
-    # --- LÍMITE DEL DISTRITO ---
     gdf_distrito.plot(ax=ax_main, facecolor="none", edgecolor="red", linewidth=2,
                      linestyle='--', alpha=0.9, zorder=15)
     
-    # --- GRILLADO, NORTE Y ESCALA ---
     grillado_utm_proyectado(ax_main, bbox_main, ndiv=8)
     add_north_arrow_blanco_completo(ax_main, xy_pos=(0.93, 0.08), size=0.06)
     ax_main.add_artist(ScaleBar(1, units="m", location="lower left", 
                                 box_alpha=0.6, border_pad=0.5, scale_loc='bottom'))
     
-    # --- MEMBRETE Y LEYENDA ---
     gs_memb_ley = gs_izquierda[2].subgridspec(1, 2, wspace=0.1)
     ax_membrete = fig.add_subplot(gs_memb_ley[0])
     fig.canvas.draw()
     add_membrete(ax_membrete, departamento_sel, provincia_sel, distrito_sel, ax_main, fig)
     
-    # --- LEYENDA GEOMORFOLÓGICA ---
     ax_leyenda = fig.add_subplot(gs_memb_ley[1])
     ax_leyenda.axis('off')
     
     legend_elements = []
     
-    # Agregar geomorfología (máximo 5 unidades en leyenda principal)
     if len(unidades_geomorfo) > 0:
         legend_elements.append(Patch(facecolor='white', edgecolor='white',
                                      label='GEOMORFOLOGÍA:', linewidth=0))
@@ -522,14 +507,12 @@ def generar_mapa_geomorfologia(nombre_usuario, departamento_sel, provincia_sel, 
                                          label=f'(+{len(unidades_geomorfo)-max_items_leyenda} más)',
                                          linewidth=0))
     
-    # Agregar otros elementos
     legend_elements.extend([
-        Patch(facecolor='white', edgecolor='white', label='', linewidth=0),  # Espaciador
+        Patch(facecolor='white', edgecolor='white', label='', linewidth=0),
         Line2D([0], [0], color='red', lw=2, linestyle='--', label='Límite Distrital'),
         Line2D([0], [0], color='black', ls='-', lw=1, label='Grillado UTM')
     ])
     
-    # Crear leyenda con múltiples columnas si es necesario
     ncols = 2 if len(legend_elements) > 8 else 1
     
     leg = ax_leyenda.legend(
@@ -550,8 +533,7 @@ def generar_mapa_geomorfologia(nombre_usuario, departamento_sel, provincia_sel, 
     leg.get_frame().set_edgecolor('black')
     leg.get_frame().set_linewidth(1.2)
     
-    # --- MAPAS DE UBICACIÓN A LA DERECHA ---
-    print("   🗺️ Generando mapas de ubicación...")
+    print("   Generando mapas de ubicación...")
     
     gs_ubicaciones = grid[0, 1].subgridspec(3, 1, height_ratios=[1, 1, 1], hspace=0.15)
     ax_depto = fig.add_subplot(gs_ubicaciones[0])
@@ -574,7 +556,6 @@ def generar_mapa_geomorfologia(nombre_usuario, departamento_sel, provincia_sel, 
                    provincia_sel=provincia_sel, col_prov=col_prov, 
                    gdf_provincias=gdf_provincias, gdf_oceano=gdf_oceano)
     
-    # --- AJUSTES FINALES ---
     plt.subplots_adjust(top=0.98, bottom=0.02, left=0.02, right=0.98, hspace=0.2, wspace=0.05)
     
     rect_frame = fig.add_axes([0, 0, 1, 1], frameon=False)
@@ -587,8 +568,7 @@ def generar_mapa_geomorfologia(nombre_usuario, departamento_sel, provincia_sel, 
         spine.set_linewidth(2)
         spine.set_color('black')
     
-    # --- GUARDAR MAPA FINAL ---
-    print("\n💾 Guardando mapa final en carpeta de usuario...")
+    print("\n Guardando mapa final en carpeta de usuario...")
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     nombre_base = f"MAPA_GEOMORFOLOGIA_{distrito_sel.replace(' ', '_')}_{timestamp}.png"
     ruta_guardado_final = os.path.join(carpeta_salida, nombre_base)
@@ -597,21 +577,20 @@ def generar_mapa_geomorfologia(nombre_usuario, departamento_sel, provincia_sel, 
         plt.savefig(ruta_guardado_final, dpi=300, bbox_inches='tight', pad_inches=0.01)
         plt.close(fig)
         
-        # Verificar que el archivo se guardó correctamente
         if os.path.exists(ruta_guardado_final):
-            file_size = os.path.getsize(ruta_guardado_final) / (1024 * 1024)  # MB
-            print(f"✅ Mapa de geomorfología guardado exitosamente")
-            print(f"   📂 Ubicación: {ruta_guardado_final}")
-            print(f"   📊 Tamaño: {file_size:.2f} MB")
-            print(f"   🌄 Unidades geomorfológicas: {len(unidades_geomorfo)}")
+            file_size = os.path.getsize(ruta_guardado_final) / (1024 * 1024)
+            print(f"Mapa de geomorfología guardado exitosamente")
+            print(f"   Ubicación: {ruta_guardado_final}")
+            print(f"   Tamaño: {file_size:.2f} MB")
+            print(f"   Unidades geomorfológicas: {len(unidades_geomorfo)}")
             print("="*80 + "\n")
             return ruta_guardado_final
         else:
-            print("❌ El archivo no se guardó correctamente")
+            print("El archivo no se guardó correctamente")
             return None
             
     except Exception as e:
-        print(f"❌ Error al guardar el archivo: {e}")
+        print(f"Error al guardar el archivo: {e}")
         import traceback
         traceback.print_exc()
         plt.close(fig)
