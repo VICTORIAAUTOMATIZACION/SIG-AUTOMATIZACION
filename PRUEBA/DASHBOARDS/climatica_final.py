@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""climatica_final.py - Con esquema de colores mejorado y etiquetas"""
+"""climatica_final.py - Adaptado EXACTAMENTE a geomorfologia_final.py"""
 
 import geopandas as gpd
 import matplotlib.pyplot as plt
@@ -22,34 +22,21 @@ ruta_base = "/workspaces/SIG-AUTOMATIZACION/PRUEBA"
 AMARILLO_CLARO = "#FFEE58"
 
 # ════════════════════════════════════════════════════════════════════════
-# 🎨 FUNCIÓN PARA GENERAR PALETA DE COLORES DISTINTIVA
+# 🎨 FUNCIÓN PARA GENERAR PALETA DE COLORES
 # ════════════════════════════════════════════════════════════════════════
 def generar_paleta_climatica(num_categorias):
-    """Genera una paleta de colores DISTINTIVA para clasificación climática"""
-    # Colores más diferenciados y vibrantes para mejor visualización
+    """Genera una paleta de colores distintiva para clasificación climática"""
     colores_base = [
-        '#1f77b4',  # Azul fuerte
-        '#2ca02c',  # Verde fuerte
-        '#ff7f0e',  # Naranja
-        '#d62728',  # Rojo
-        '#9467bd',  # Púrpura
-        '#8c564b',  # Marrón
-        '#e377c2',  # Rosa
-        '#7f7f7f',  # Gris
-        '#bcbd22',  # Amarillo verdoso
-        '#17becf',  # Cian
-        '#aec7e8',  # Azul claro
-        '#ffbb78',  # Naranja claro
-        '#98df8a',  # Verde claro
-        '#ff9896',  # Rojo claro
-        '#c5b0d5',  # Púrpura claro
+        '#1f78b4', '#33a02c', '#e31a1c', '#ff7f00', '#6a3d9a',
+        '#a6cee3', '#b2df8a', '#fb9a99', '#fdbf6f', '#cab2d6',
+        '#00CED1', '#FF69B4', '#8B4513', '#228B22', '#FFD700',
+        '#87CEEB', '#4682B4', '#5F9EA0', '#6495ED', '#48D1CC'
     ]
 
     if num_categorias <= len(colores_base):
         return colores_base[:num_categorias]
     else:
-        # Generar colores adicionales con mejor contraste
-        return colores_base + [mcolors.hsv_to_rgb((i/num_categorias, 0.7, 0.9))
+        return colores_base + [mcolors.hsv_to_rgb((i/num_categorias, 0.6, 0.9))
                                for i in range(num_categorias - len(colores_base))]
 
 # ════════════════════════════════════════════════════════════════════════
@@ -57,6 +44,7 @@ def generar_paleta_climatica(num_categorias):
 # ════════════════════════════════════════════════════════════════════════
 def cargar_clasificacion_climatica():
     """Carga el shapefile de clasificación climática"""
+    # Primero intentar ruta directa
     ruta_directa = f"{ruta_base}/DATA/CLASIFICACION CLIMATICA/clasif_climática.shp"
     
     if os.path.exists(ruta_directa):
@@ -71,9 +59,11 @@ def cargar_clasificacion_climatica():
         except Exception as e:
             print(f"❌ Error cargando desde ruta directa: {e}")
     
+    # Buscar recursivamente con múltiples patrones
     print("🔍 Buscando archivo climático recursivamente...")
     for root, dirs, files in os.walk(f"{ruta_base}/DATA"):
         for file in files:
+            # Buscar archivos que contengan "climat" o "clasif" en el nombre
             if file.endswith(".shp") and any(palabra in file.lower() for palabra in ["climat", "clasif", "clima"]):
                 ruta_clima = os.path.join(root, file)
                 print(f"   📍 Intentando: {ruta_clima}")
@@ -281,9 +271,6 @@ def generar_mapa_climatica(nombre_usuario, departamento_sel, provincia_sel, dist
                 paleta_clima = generar_paleta_climatica(len(unidades_clima))
 
                 print(f"✅ Clasificación climática recortada: {len(unidades_clima)} unidades")
-                print(f"   📋 Columna utilizada: {col_clima}")
-                for idx, unidad in enumerate(unidades_clima):
-                    print(f"   🌡️ {idx+1}. {unidad}")
             else:
                 print("⚠️ No hay unidades climáticas en el área")
                 return None
@@ -310,13 +297,14 @@ def generar_mapa_climatica(nombre_usuario, departamento_sel, provincia_sel, dist
     # --- MAPA PRINCIPAL ---
     ax_main = fig.add_subplot(gs_izquierda[1])
 
-    # Calcular bbox con aspect ratio consistente
+    # Calcular bbox
     minx, miny, maxx, maxy = gdf_distrito.total_bounds
     buffer_factor = 0.15
     buffer_x = (maxx - minx) * buffer_factor
     buffer_y = (maxy - miny) * buffer_factor
     bbox_temp = (minx - buffer_x, miny - buffer_y, maxx + buffer_x, maxy + buffer_y)
 
+    # Ajustar bbox a proporción fija
     aspect_ratio_objetivo = 1.21
     cx = (bbox_temp[0] + bbox_temp[2]) / 2
     cy = (bbox_temp[1] + bbox_temp[3]) / 2
@@ -343,40 +331,13 @@ def generar_mapa_climatica(nombre_usuario, departamento_sel, provincia_sel, dist
         print(f"   ⚠️ No se pudo cargar el mapa base: {e}")
         ax_main.set_facecolor("#e8e8e8")
 
-    # --- DIBUJAR CLASIFICACIÓN CLIMÁTICA CON ETIQUETAS ---
+    # --- DIBUJAR CLASIFICACIÓN CLIMÁTICA ---
     if gdf_clima_clipped is not None and not gdf_clima_clipped.empty:
-        print("   🌡️ Dibujando unidades climáticas con etiquetas...")
+        print("   🌡️ Dibujando unidades climáticas...")
         for idx, unidad in enumerate(unidades_clima):
             gdf_unidad = gdf_clima_clipped[gdf_clima_clipped[col_clima] == unidad]
-            
-            # Dibujar polígonos con transparencia
             gdf_unidad.plot(ax=ax_main, color=paleta_clima[idx], edgecolor='black',
-                           linewidth=0.6, alpha=0.65, zorder=4)
-            
-            # Agregar etiquetas en el centroide de cada polígono
-            for _, row in gdf_unidad.iterrows():
-                try:
-                    centroid = row.geometry.representative_point()
-                    nombre_etiqueta = str(unidad)
-                    
-                    # Acortar nombres muy largos
-                    if len(nombre_etiqueta) > 15:
-                        nombre_etiqueta = nombre_etiqueta[:12] + "..."
-                    
-                    ax_main.text(
-                        centroid.x, centroid.y, 
-                        nombre_etiqueta,
-                        color='white', 
-                        fontsize=7, 
-                        fontweight='bold',
-                        ha='center', 
-                        va='center',
-                        zorder=20,
-                        path_effects=[path_effects.withStroke(linewidth=2.5, foreground='black')]
-                    )
-                except Exception as e:
-                    print(f"   ⚠️ Error al etiquetar unidad climática: {e}")
-                    continue
+                           linewidth=0.5, alpha=0.7, zorder=4)
 
     # --- LÍMITE DEL DISTRITO ---
     if not gdf_distrito.empty:
@@ -394,20 +355,24 @@ def generar_mapa_climatica(nombre_usuario, departamento_sel, provincia_sel, dist
     fig.canvas.draw()
     add_membrete(ax_membrete, departamento_sel, provincia_sel, distrito_sel, ax_main, fig)
 
-    # --- LEYENDA OPTIMIZADA ---
+    # --- LEYENDA ACTUALIZADA ---
     ax_leyenda = fig.add_subplot(gs_memb_ley[1])
     ax_leyenda.axis('off')
 
     legend_elements = []
 
-    # Agregar todas las unidades climáticas
+    # Agregar clasificación climática (máximo 3 unidades en leyenda)
     if len(unidades_clima) > 0:
         legend_elements.append(Patch(facecolor='white', edgecolor='white',
                                      label='CLASIFICACIÓN CLIMÁTICA:', linewidth=0))
-        for idx, unidad in enumerate(unidades_clima):
-            nombre_corto = str(unidad)[:25] + '...' if len(str(unidad)) > 25 else str(unidad)
+        for idx, unidad in enumerate(unidades_clima[:3]):
+            nombre_corto = str(unidad)[:20] + '...' if len(str(unidad)) > 20 else str(unidad)
             legend_elements.append(Patch(facecolor=paleta_clima[idx],
                                          edgecolor='black', label=nombre_corto))
+        if len(unidades_clima) > 3:
+            legend_elements.append(Patch(facecolor='white', edgecolor='white',
+                                         label=f'(+{len(unidades_clima)-3} más)',
+                                         linewidth=0))
 
     # Agregar otros elementos
     legend_elements.extend([
@@ -419,8 +384,8 @@ def generar_mapa_climatica(nombre_usuario, departamento_sel, provincia_sel, dist
     num_elementos = len(legend_elements)
     if num_elementos <= 6:
         ncols = 2
-    elif num_elementos <= 9:
-        ncols = 2
+    elif num_elementos <= 12:
+        ncols = 3
     else:
         ncols = 3
 
@@ -429,12 +394,12 @@ def generar_mapa_climatica(nombre_usuario, departamento_sel, provincia_sel, dist
         loc='center',
         ncol=ncols,
         frameon=True,
-        fontsize=7,
+        fontsize=7.5,
         title="LEYENDA",
         title_fontproperties={'size': 10, 'weight': 'bold'},
         handletextpad=0.5,
-        columnspacing=0.8,
-        borderpad=0.6,
+        columnspacing=1.0,
+        borderpad=0.7,
         handlelength=1.5
     )
 
@@ -486,6 +451,5 @@ def generar_mapa_climatica(nombre_usuario, departamento_sel, provincia_sel, dist
 
     print(f"✅ Mapa de clasificación climática guardado exitosamente en: {ruta_guardado_final}")
     print(f"   📊 Unidades climáticas identificadas: {len(unidades_clima)}")
-    print("="*80 + "\n")
 
     return ruta_guardado_final
