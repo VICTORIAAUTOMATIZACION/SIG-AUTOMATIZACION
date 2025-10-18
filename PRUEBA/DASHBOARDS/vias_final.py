@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""vias_final.py - Adaptado para integración con Dashboard"""
+"""vias_final.py - Adaptado EXACTAMENTE a climatica_final.py"""
 
 import geopandas as gpd
 import matplotlib.pyplot as plt
@@ -16,7 +16,7 @@ from matplotlib.lines import Line2D
 import datetime
 
 # --- RUTA BASE ---
-ruta_base = "/workspaces/GIT_PRUEBA_SIG/PRUEBA"
+ruta_base = "/workspaces/SIG-AUTOMATIZACION/PRUEBA"
 AMARILLO_CLARO = "#FFEE58"
 
 # ════════════════════════════════════════════════════════════════════════
@@ -24,10 +24,11 @@ AMARILLO_CLARO = "#FFEE58"
 # ════════════════════════════════════════════════════════════════════════
 def cargar_rios():
     """Carga el shapefile de ríos"""
-    ruta_directa = f"{ruta_base}/DATA/MAPA DE UBICACION/RIOS/Rios_lineal_IGN_IDEP_geogpsperu_SuyoPomalia.shp"
+    ruta_directa = f"{ruta_base}/DATA/MAPA DE UBICACION/RIOS/rios_lineal_idep_ign_100k_geogpsperu.shp"
     
     if os.path.exists(ruta_directa):
         try:
+            print(f"📂 Encontrado ríos en: {ruta_directa}")
             gdf_rios = gpd.read_file(ruta_directa)
             if gdf_rios.crs is None:
                 gdf_rios.set_crs(epsg=4326, inplace=True)
@@ -35,105 +36,9 @@ def cargar_rios():
             print(f"✅ Ríos cargados: {len(gdf_rios)} registros")
             return gdf_rios
         except Exception as e:
-            print(f"   ⚠️ Error al dibujar vías departamentales: {e}")
-    
-    # Vías Nacionales (rojo) - ÚLTIMO para que queden arriba
-    if vias['nacional'] is not None:
-        try:
-            gdf_via_nacional_clip = vias['nacional'].clip(box(*bbox_main))
-            if not gdf_via_nacional_clip.empty:
-                gdf_via_nacional_clip.plot(ax=ax_main, color='#FF0000', linewidth=2.2, zorder=14)
-                print(f"   ✅ Vías nacionales: {len(gdf_via_nacional_clip)} registros")
-        except Exception as e:
-            print(f"   ⚠️ Error al dibujar vías nacionales: {e}")
-    
-    # --- GRILLADO, NORTE Y ESCALA ---
-    grillado_utm_proyectado(ax_main, bbox_main, ndiv=8)
-    add_north_arrow_blanco_completo(ax_main, xy_pos=(0.93, 0.08), size=0.06)
-    ax_main.add_artist(ScaleBar(1, units="m", location="lower left", box_alpha=0.6, border_pad=0.5, scale_loc='bottom'))
-    
-    # --- MEMBRETE Y LEYENDA ---
-    gs_memb_ley = gs_izquierda[2].subgridspec(1, 2, wspace=0.1)
-    ax_membrete = fig.add_subplot(gs_memb_ley[0])
-    fig.canvas.draw()
-    add_membrete(ax_membrete, departamento_sel, provincia_sel, distrito_sel, ax_main, fig)
-    
-    # --- LEYENDA ---
-    ax_leyenda = fig.add_subplot(gs_memb_ley[1])
-    ax_leyenda.axis('off')
-    
-    legend_elements = [
-        Line2D([0], [0], color='#00BFFF', lw=2.5, label='Ríos'),
-        Line2D([0], [0], color='#FF0000', lw=2.5, label='Vía Nacional'),
-        Line2D([0], [0], color='#FF69B4', lw=2.5, label='Vía Departamental'),
-        Line2D([0], [0], color='#90EE90', lw=2.5, label='Vía Vecinal'),
-        Line2D([0], [0], color='black', lw=2, label='Límite Distrital'),
-        Line2D([0], [0], color='black', ls='-', lw=1, label='Grillado UTM')
-    ]
-    
-    leg = ax_leyenda.legend(
-        handles=legend_elements,
-        loc='center',
-        ncol=2,
-        frameon=True,
-        fontsize=8,
-        title="LEYENDA",
-        title_fontproperties={'size': 10, 'weight': 'bold'},
-        handletextpad=0.8,
-        columnspacing=1.2,
-        borderpad=0.8
-    )
-    
-    leg.get_title().set_ha('center')
-    leg.get_frame().set_edgecolor('black')
-    leg.get_frame().set_linewidth(1.2)
-    
-    # --- MAPAS DE UBICACIÓN A LA DERECHA ---
-    print("   🗺️ Generando mapas de ubicación...")
-    
-    gs_ubicaciones = grid[0, 1].subgridspec(3, 1, height_ratios=[1, 1, 1], hspace=0.15)
-    ax_depto = fig.add_subplot(gs_ubicaciones[0])
-    ax_prov = fig.add_subplot(gs_ubicaciones[1])
-    ax_dist = fig.add_subplot(gs_ubicaciones[2])
-    
-    mapa_ubicacion(ax_depto, gdf_paises, gdf_departamentos, gdf_dpto_sel,
-                   f"DEPARTAMENTO DE\n{departamento_sel.upper()}", departamento_sel,
-                   tipo_mapa="pais", gdf_departamentos=gdf_departamentos, gdf_oceano=gdf_oceano)
-    mapa_ubicacion(ax_prov, gdf_departamentos, gdf_dpto_sel, gdf_prov_sel,
-                   f"PROVINCIA DE\n{provincia_sel.upper()}", provincia_sel,
-                   tipo_mapa="provincia", gdf_dpto_sel=gdf_dpto_sel, departamento_sel=departamento_sel,
-                   col_dpto=col_dpto, gdf_departamentos=gdf_departamentos, gdf_oceano=gdf_oceano)
-    mapa_ubicacion(ax_dist, gdf_prov_sel, gdf_distritos_en_provincia, gdf_distrito,
-                   f"DISTRITO DE\n{distrito_sel.upper()}", distrito_sel,
-                   tipo_mapa="distrito", gdf_prov_sel=gdf_prov_sel, provincia_sel=provincia_sel,
-                   col_prov=col_prov, gdf_provincias=gdf_provincias, gdf_oceano=gdf_oceano)
-    
-    # --- AJUSTES FINALES ---
-    plt.subplots_adjust(top=0.98, bottom=0.02, left=0.02, right=0.98, hspace=0.2, wspace=0.05)
-    
-    rect_frame = fig.add_axes([0, 0, 1, 1], frameon=False)
-    rect_frame.set_xticks([])
-    rect_frame.set_yticks([])
-    rect_frame.patch.set_visible(False)
-    
-    for spine in rect_frame.spines.values():
-        spine.set_visible(True)
-        spine.set_linewidth(2)
-        spine.set_color('black')
-    
-    # --- GUARDAR MAPA FINAL ---
-    print("\n💾 Guardando mapa final en carpeta de usuario...")
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    nombre_base = f"MAPA_VIAS_{distrito_sel.replace(' ', '_')}_{timestamp}.png"
-    ruta_guardado_final = os.path.join(carpeta_salida, nombre_base)
-    
-    plt.savefig(ruta_guardado_final, dpi=300, bbox_inches='tight', pad_inches=0.01)
-    plt.close(fig)
-    
-    print(f"✅ Mapa de vías guardado exitosamente en: {ruta_guardado_final}")
-    
-    return ruta_guardado_final
             print(f"⚠️ Error cargando ríos: {e}")
+    
+    print(f"❌ No se encontró archivo de ríos en {ruta_directa}")
     return None
 
 # ════════════════════════════════════════════════════════════════════════
@@ -171,7 +76,7 @@ def cargar_vias():
     return vias
 
 # ════════════════════════════════════════════════════════════════════════
-# FUNCIONES AUXILIARES (COPIADAS Y ADAPTADAS)
+# FUNCIONES AUXILIARES
 # ════════════════════════════════════════════════════════════════════════
 def add_north_arrow_blanco_completo(ax, xy_pos=(0.93, 0.08), size=0.06):
     x_pos, y_pos = xy_pos
@@ -318,6 +223,9 @@ def grillado_grados_mejorado(ax, bbox, ndiv=5, decimales=2):
         label.set_verticalalignment('center')
         label.set_horizontalalignment('right')
 
+# =========================================================================
+# FUNCIÓN DE MAPA DE UBICACIÓN MODIFICADA
+# =========================================================================
 def mapa_ubicacion(ax, gdf_base_map, gdf_context, gdf_focus, titulo, etiqueta, tipo_mapa, gdf_dpto_sel=None, gdf_prov_sel=None, col_prov=None, col_dpto=None, departamento_sel=None, provincia_sel=None, gdf_departamentos=None, gdf_provincias=None, gdf_oceano=None):
     is_focus_valid = not gdf_focus.empty and all(np.isfinite(gdf_focus.total_bounds))
     
@@ -344,22 +252,69 @@ def mapa_ubicacion(ax, gdf_base_map, gdf_context, gdf_focus, titulo, etiqueta, t
     bbox = (cx - S / 2, cy - S / 2, cx + S / 2, cy + S / 2)
     
     if gdf_oceano is not None:
-        gdf_oceano.clip(box(*bbox)).plot(ax=ax, color="#A4D4FF", edgecolor="none", zorder=2)
+        gdf_oceano_clipped = gdf_oceano.clip(box(*bbox))
+        gdf_oceano_clipped.plot(ax=ax, color="#A4D4FF", edgecolor="none", zorder=2)
+        if not gdf_oceano_clipped.empty and tipo_mapa == "pais":
+            ocean_point = gdf_oceano_clipped.geometry.unary_union.representative_point()
+            ax.text(ocean_point.x, ocean_point.y, "OCÉANO\nPACÍFICO",
+                    transform=ax.transData, color="#00008B", fontsize=6,
+                    ha='center', va='center', style='italic', rotation=-60,
+                    path_effects=[path_effects.withStroke(linewidth=2, foreground="white")])
     
     if tipo_mapa == "pais":
         if gdf_base_map is not None:
             gdf_base_map.plot(ax=ax, color="#f0eee8", edgecolor="black", linewidth=0.4, zorder=1)
+            col_pais = next((c for c in ['NOMBDEP', 'NOMBRE', 'PAIS', 'PAÍS'] if c in gdf_base_map.columns), None)
+            if col_pais:
+                peru_geom = gdf_context.unary_union
+                for idx, row in gdf_base_map.iterrows():
+                    # --- INICIO DE MODIFICACIÓN: ETIQUETAS DE PAISES ---
+                    if not row.geometry.intersects(peru_geom): # Usar 'intersects' para incluir fronteras
+                        country_name = str(row[col_pais]) if row[col_pais] else ''
+                        centroid = row.geometry.representative_point()
+                        if bbox[0] < centroid.x < bbox[2] and bbox[1] < centroid.y < bbox[3]:
+                            ax.text(centroid.x, centroid.y, country_name.upper(),
+                                    transform=ax.transData, fontsize=5, ha='center', va='center', # Reducido el tamaño de fuente
+                                    color='dimgray', path_effects=[path_effects.withStroke(linewidth=1.5, foreground='white')])
+                    # --- FIN DE MODIFICACIÓN ---
         if gdf_context is not None:
             gdf_context.plot(ax=ax, color=AMARILLO_CLARO, edgecolor="black", linewidth=0.7, zorder=3)
+    
     elif tipo_mapa == "provincia":
         if gdf_base_map is not None:
             gdf_base_map.plot(ax=ax, color="#f0eee8", edgecolor="black", linewidth=0.4, zorder=1)
+            # --- INICIO DE MODIFICACIÓN: ETIQUETAS DE DEPARTAMENTOS ---
+            if col_dpto:
+                dpto_sel_geom = gdf_context.unary_union
+                for idx, row in gdf_base_map.iterrows():
+                    if not row.geometry.equals(dpto_sel_geom):
+                        dpto_name = str(row[col_dpto]) if row[col_dpto] else ''
+                        centroid = row.geometry.representative_point()
+                        if bbox[0] < centroid.x < bbox[2] and bbox[1] < centroid.y < bbox[3]:
+                            ax.text(centroid.x, centroid.y, dpto_name.upper(),
+                                    transform=ax.transData, fontsize=5, ha='center', va='center',
+                                    color='dimgray', path_effects=[path_effects.withStroke(linewidth=1.5, foreground='white')])
+            # --- FIN DE MODIFICACIÓN ---
         if gdf_context is not None:
             gdf_context.plot(ax=ax, color=AMARILLO_CLARO, edgecolor="black", linewidth=0.7, zorder=3)
+            
     elif tipo_mapa == "distrito":
+        # --- INICIO DE MODIFICACIÓN: MOSTRAR Y ETIQUETAR PROVINCIAS VECINAS ---
         if gdf_provincias is not None:
-            gdf_provincias[gdf_provincias[col_prov] != provincia_sel].plot(ax=ax, color='lightgray', edgecolor='darkgray', linewidth=0.4, zorder=2)
+            provincias_a_mostrar = gdf_provincias.clip(box(*bbox))
+            provincias_a_mostrar[provincias_a_mostrar[col_prov] != provincia_sel].plot(ax=ax, color='lightgray', edgecolor='darkgray', linewidth=0.4, zorder=2)
+            
+            for idx, row in provincias_a_mostrar.iterrows():
+                if row[col_prov] != provincia_sel:
+                    prov_name = str(row[col_prov]) if row[col_prov] else ''
+                    centroid = row.geometry.representative_point()
+                    if bbox[0] < centroid.x < bbox[2] and bbox[1] < centroid.y < bbox[3]:
+                        ax.text(centroid.x, centroid.y, prov_name.upper(),
+                                transform=ax.transData, fontsize=5, ha='center', va='center',
+                                color='dimgray', path_effects=[path_effects.withStroke(linewidth=1.5, foreground='white')])
+            
             gdf_prov_sel.plot(ax=ax, color=AMARILLO_CLARO, edgecolor='black', linewidth=0.7, zorder=3)
+        # --- FIN DE MODIFICACIÓN ---
         if gdf_context is not None:
             gdf_context.plot(ax=ax, facecolor='none', edgecolor="gray", linewidth=0.4, zorder=4)
     
@@ -381,7 +336,7 @@ def mapa_ubicacion(ax, gdf_base_map, gdf_context, gdf_focus, titulo, etiqueta, t
     ax.axis('on')
 
 # ════════════════════════════════════════════════════════════════════════
-# 🗺️ FUNCIÓN PRINCIPAL DE GENERACIÓN DE MAPA DE VÍAS
+# 🗺️ FUNCIÓN PRINCIPAL DE GENERACIÓN DE MAPA DE VÍAS (MODIFICADA)
 # ════════════════════════════════════════════════════════════════════════
 def generar_mapa_vias(nombre_usuario, departamento_sel, provincia_sel, distrito_sel):
     """Genera el mapa de vías para el distrito seleccionado"""
@@ -390,7 +345,6 @@ def generar_mapa_vias(nombre_usuario, departamento_sel, provincia_sel, distrito_
     print(f"   - Usuario: {nombre_usuario}")
     print(f"   - Ubicación: {distrito_sel}, {provincia_sel}, {departamento_sel}")
     
-    # --- LÓGICA DE CARPETA DE USUARIO ---
     try:
         carpeta_usuario = os.path.join(ruta_base, "USUARIOS", nombre_usuario)
         carpeta_salida = os.path.join(carpeta_usuario, "MAPA DE VIAS")
@@ -400,7 +354,6 @@ def generar_mapa_vias(nombre_usuario, departamento_sel, provincia_sel, distrito_
         print(f"❌ Error creando la estructura de carpetas para el usuario: {e}")
         return None
     
-    # --- CARGAR CAPAS BASE ---
     print("\n📦 Cargando capas base...")
     gdf_departamentos = cargar_shapefile("departamento", "Departamentos")
     gdf_provincias = cargar_shapefile("provincia", "Provincias")
@@ -418,12 +371,10 @@ def generar_mapa_vias(nombre_usuario, departamento_sel, provincia_sel, distrito_
         print("❌ Faltan capas base (departamento, provincia o distrito). Abortando.")
         return None
     
-    # --- IDENTIFICAR COLUMNAS ---
     col_dpto = next((c for c in ['NOMBDEP', 'DEPARTAMEN'] if c in gdf_departamentos.columns), None)
     col_prov = next((c for c in ['NOMBPROV', 'PROVINCIA'] if c in gdf_provincias.columns), None)
     col_distr = next((c for c in ['NOMBDIST', 'DISTRITO'] if c in gdf_distritos.columns), None)
     
-    # --- FILTRAR DATOS DEL ÁREA SELECCIONADA ---
     print("\n🔍 Filtrando datos del área seleccionada...")
     gdf_dpto_sel = gdf_departamentos[gdf_departamentos[col_dpto] == departamento_sel]
     gdf_prov_sel = gdf_provincias[gdf_provincias[col_prov] == provincia_sel]
@@ -434,19 +385,16 @@ def generar_mapa_vias(nombre_usuario, departamento_sel, provincia_sel, distrito_
         print(f"❌ Error: No se pudo encontrar la geometría para el distrito '{distrito_sel}'.")
         return None
     
-    # --- CARGAR CAPAS DE RÍOS Y VÍAS ---
     print("\n🌊 Cargando ríos y vías...")
     gdf_rios = cargar_rios()
     vias = cargar_vias()
     
-    # --- CALCULAR BBOX DEL DISTRITO ---
     minx, miny, maxx, maxy = gdf_distrito.total_bounds
     buffer_factor = 0.15
     buffer_x = (maxx - minx) * buffer_factor
     buffer_y = (maxy - miny) * buffer_factor
     bbox_temp = (minx - buffer_x, miny - buffer_y, maxx + buffer_x, maxy + buffer_y)
     
-    # Ajustar bbox a proporción fija
     aspect_ratio_objetivo = 1.21
     cx = (bbox_temp[0] + bbox_temp[2]) / 2
     cy = (bbox_temp[1] + bbox_temp[3]) / 2
@@ -461,26 +409,22 @@ def generar_mapa_vias(nombre_usuario, departamento_sel, provincia_sel, distrito_
         nuevo_ancho = alto_actual * aspect_ratio_objetivo
         bbox_main = (cx - nuevo_ancho/2, bbox_temp[1], cx + nuevo_ancho/2, bbox_temp[3])
     
-    # --- CREAR FIGURA ---
     print("\n🎨 Generando layout del mapa...")
     fig = plt.figure(figsize=(14, 9.9))
     grid = plt.GridSpec(1, 2, width_ratios=[3.0, 1], wspace=0.05)
     gs_izquierda = grid[0, 0].subgridspec(3, 1, height_ratios=[0.08, 3.5, 0.42], hspace=0.08)
     
-    # --- TÍTULO PRINCIPAL ---
     ax_titulo = fig.add_subplot(gs_izquierda[0])
     ax_titulo.text(0.5, 0.5, f"MAPA DE VÍAS - DISTRITO DE {distrito_sel.upper()}",
                    ha='center', va='center', fontsize=12, fontweight="normal",
                    bbox=dict(boxstyle='square,pad=0.5', facecolor='white', edgecolor='black', linewidth=1.5, alpha=0.95))
     ax_titulo.axis('off')
     
-    # --- MAPA PRINCIPAL ---
     ax_main = fig.add_subplot(gs_izquierda[1])
     ax_main.set_xlim(bbox_main[0], bbox_main[2])
     ax_main.set_ylim(bbox_main[1], bbox_main[3])
     ax_main.set_aspect('equal', adjustable='box')
     
-    # Agregar basemap
     print("   📡 Descargando imagen satelital...")
     try:
         ctx.add_basemap(ax_main, source=ctx.providers.Esri.WorldImagery, attribution=False, zoom='auto')
@@ -488,38 +432,177 @@ def generar_mapa_vias(nombre_usuario, departamento_sel, provincia_sel, distrito_
         print(f"   ⚠️ No se pudo cargar el mapa base: {e}")
         ax_main.set_facecolor("#e8e8e8")
     
-    # --- DIBUJAR DISTRITO ---
     if not gdf_distrito.empty:
-        gdf_distrito.plot(ax=ax_main, facecolor="none", edgecolor="black", linewidth=2,
-                         linestyle='-', alpha=0.9, zorder=10)
+        gdf_distrito.plot(ax=ax_main, facecolor="#a8dda8", edgecolor="black", linewidth=1.5, 
+                         linestyle='-', alpha=0.6, zorder=5)
+        print("   ✅ Distrito dibujado con el nuevo estilo solicitado")
     
-    # --- DIBUJAR RÍOS ---
     if gdf_rios is not None:
         try:
             gdf_rios_clip = gdf_rios.clip(box(*bbox_main))
             if not gdf_rios_clip.empty:
-                print("   🌊 Dibujando ríos...")
-                gdf_rios_clip.plot(ax=ax_main, color='#00BFFF', linewidth=1.5, zorder=11)
+                print(f"   🌊 Dibujando ríos... ({len(gdf_rios_clip)} registros)")
+                gdf_rios_clip.plot(ax=ax_main, color='#00BFFF', linewidth=2.0, zorder=11)
         except Exception as e:
             print(f"   ⚠️ Error al recortar ríos: {e}")
+    else:
+        print("   ⚠️ No hay datos de ríos para mostrar")
     
-    # --- DIBUJAR VÍAS ---
     print("   🛣️ Dibujando vías...")
-    # Vías Vecinales (verde claro) - PRIMERO
-    if vias['vecinal'] is not None:
-        try:
-            gdf_via_vecinal_clip = vias['vecinal'].clip(box(*bbox_main))
-            if not gdf_via_vecinal_clip.empty:
-                gdf_via_vecinal_clip.plot(ax=ax_main, color='#90EE90', linewidth=1.2, zorder=12)
-                print(f"   ✅ Vías vecinales: {len(gdf_via_vecinal_clip)} registros")
-        except Exception as e:
-            print(f"   ⚠️ Error al dibujar vías vecinales: {e}")
     
-    # Vías Departamentales (rosado)
+    if vias['nacional'] is not None:
+        try:
+            gdf_via_nacional_clip = vias['nacional'].clip(box(*bbox_main))
+            if not gdf_via_nacional_clip.empty:
+                gdf_via_nacional_clip.plot(ax=ax_main, color='#FF0000', linewidth=2.2, zorder=12)
+                print(f"   ✅ Vías nacionales: {len(gdf_via_nacional_clip)} registros")
+        except Exception as e:
+            print(f"   ⚠️ Error al dibujar vías nacionales: {e}")
+    
     if vias['departamental'] is not None:
         try:
             gdf_via_departamental_clip = vias['departamental'].clip(box(*bbox_main))
             if not gdf_via_departamental_clip.empty:
-                gdf_via_departamental_clip.plot(ax=ax_main, color='#FF69B4', linewidth=1.8, zorder=13)
+                gdf_via_departamental_clip.plot(ax=ax_main, color='#32CD32', linewidth=1.8, zorder=13)
                 print(f"   ✅ Vías departamentales: {len(gdf_via_departamental_clip)} registros")
         except Exception as e:
+            print(f"   ⚠️ Error al dibujar vías departamentales: {e}")
+    
+    tipos_superficie_vecinal = []
+    if vias['vecinal'] is not None:
+        try:
+            gdf_via_vecinal_clip = vias['vecinal'].clip(box(*bbox_main))
+            if not gdf_via_vecinal_clip.empty:
+                col_superficie = next((c for c in ['SUPERFIC_L', 'SUPERFICIE', 'TIPO_SUPERF', 'SUPERF'] if c in gdf_via_vecinal_clip.columns), None)
+                
+                if col_superficie:
+                    tipos_superficie_vecinal = sorted(gdf_via_vecinal_clip[col_superficie].dropna().unique())
+                    print(f"   📋 Tipos de superficie encontrados: {tipos_superficie_vecinal}")
+                    
+                    # --- INICIO DE MODIFICACIÓN: NUEVOS COLORES PARA VÍAS VECINALES ---
+                    colores_superficie = {
+                        'Trocha': '#FFFF00',       # Amarillo
+                        'Sin afirmar': '#4B0082',    # Morado Oscuro
+                        'Afirmado': '#006400',       # Verde Oscuro
+                        'Asfaltado': '#DA70D6',    # Color original
+                        'Pavimentado': '#9400D3'  # Color original
+                    }
+                    # --- FIN DE MODIFICACIÓN ---
+                    
+                    for tipo in tipos_superficie_vecinal:
+                        gdf_tipo = gdf_via_vecinal_clip[gdf_via_vecinal_clip[col_superficie] == tipo]
+                        if not gdf_tipo.empty:
+                            color = colores_superficie.get(tipo, '#FFFF00') # Amarillo por defecto
+                            gdf_tipo.plot(ax=ax_main, color=color, linewidth=1.5, linestyle='--', zorder=15, label=f'V.V. {tipo}')
+                            print(f"      ✅ {tipo}: {len(gdf_tipo)} registros")
+                else:
+                    print("   ⚠️ No se encontró columna de superficie, dibujando todo en color por defecto")
+                    gdf_via_vecinal_clip.plot(ax=ax_main, color='#FFFF00', linewidth=1.5, linestyle='--', zorder=15)
+                
+                print(f"   ✅ Vías vecinales (ADELANTE): {len(gdf_via_vecinal_clip)} registros")
+            else:
+                print("   ⚠️ No hay vías vecinales en el área del mapa")
+        except Exception as e:
+            print(f"   ⚠️ Error al dibujar vías vecinales: {e}")
+    else:
+        print("   ⚠️ No se cargaron datos de vías vecinales")
+    
+    grillado_utm_proyectado(ax_main, bbox_main, ndiv=8)
+    add_north_arrow_blanco_completo(ax_main, xy_pos=(0.93, 0.08), size=0.06)
+    ax_main.add_artist(ScaleBar(1, units="m", location="lower left", box_alpha=0.6, border_pad=0.5, scale_loc='bottom'))
+    
+    gs_memb_ley = gs_izquierda[2].subgridspec(1, 2, wspace=0.1)
+    ax_membrete = fig.add_subplot(gs_memb_ley[0])
+    fig.canvas.draw()
+    add_membrete(ax_membrete, departamento_sel, provincia_sel, distrito_sel, ax_main, fig)
+    
+    ax_leyenda = fig.add_subplot(gs_memb_ley[1])
+    ax_leyenda.axis('off')
+    
+    legend_elements = [
+        Patch(facecolor='#a8dda8', edgecolor='black', alpha=0.6, label='Área del Distrito'),
+        Line2D([0], [0], color='#00BFFF', lw=2.5, label='Ríos'),
+        Line2D([0], [0], color='#FF0000', lw=2.5, label='Vía Nacional'),
+        Line2D([0], [0], color='#32CD32', lw=2.5, label='Vía Departamental')
+    ]
+    
+    if tipos_superficie_vecinal:
+        legend_elements.append(Patch(facecolor='white', edgecolor='white', label='VÍAS VECINALES:', linewidth=0))
+        # --- INICIO DE MODIFICACIÓN: NUEVOS COLORES (LEYENDA) ---
+        colores_superficie = {
+            'Trocha': '#FFFF00',       # Amarillo
+            'Sin afirmar': '#4B0082',    # Morado Oscuro
+            'Afirmado': '#006400',       # Verde Oscuro
+            'Asfaltado': '#DA70D6',    # Color original
+            'Pavimentado': '#9400D3'  # Color original
+        }
+        # --- FIN DE MODIFICACIÓN ---
+        for tipo in tipos_superficie_vecinal:
+            color = colores_superficie.get(tipo, '#FFFF00')
+            legend_elements.append(Line2D([0], [0], color=color, lw=2.5, linestyle='--', label=f'  {tipo}'))
+    else:
+        legend_elements.append(Line2D([0], [0], color='#FFFF00', lw=2.5, linestyle='--', label='Vía Vecinal'))
+    
+    legend_elements.extend([
+        Line2D([0], [0], color='black', lw=2, label='Límite Distrital')
+    ])
+    
+    ncols = 2 if len(legend_elements) <= 12 else 3
+    leg = ax_leyenda.legend(
+        handles=legend_elements, loc='center', ncol=ncols, frameon=True, fontsize=7.5,
+        title="LEYENDA", title_fontproperties={'size': 10, 'weight': 'bold'},
+        handletextpad=0.6, columnspacing=1.0, borderpad=0.7, handlelength=1.8
+    )
+    leg.get_title().set_ha('center')
+    leg.get_frame().set_edgecolor('black')
+    leg.get_frame().set_linewidth(1.2)
+    
+    print("   🗺️ Generando mapas de ubicación...")
+    gs_ubicaciones = grid[0, 1].subgridspec(3, 1, height_ratios=[1, 1, 1], hspace=0.15)
+    ax_depto = fig.add_subplot(gs_ubicaciones[0])
+    ax_prov = fig.add_subplot(gs_ubicaciones[1])
+    ax_dist = fig.add_subplot(gs_ubicaciones[2])
+    
+    mapa_ubicacion(ax_depto, gdf_paises, gdf_departamentos, gdf_dpto_sel,
+                   f"DEPARTAMENTO DE\n{departamento_sel.upper()}", departamento_sel,
+                   tipo_mapa="pais", gdf_departamentos=gdf_departamentos, gdf_oceano=gdf_oceano)
+    mapa_ubicacion(ax_prov, gdf_departamentos, gdf_dpto_sel, gdf_prov_sel,
+                   f"PROVINCIA DE\n{provincia_sel.upper()}", provincia_sel,
+                   tipo_mapa="provincia", gdf_dpto_sel=gdf_dpto_sel, departamento_sel=departamento_sel,
+                   col_dpto=col_dpto, gdf_departamentos=gdf_departamentos, gdf_oceano=gdf_oceano)
+    mapa_ubicacion(ax_dist, gdf_prov_sel, gdf_distritos_en_provincia, gdf_distrito,
+                   f"DISTRITO DE\n{distrito_sel.upper()}", distrito_sel,
+                   tipo_mapa="distrito", gdf_prov_sel=gdf_prov_sel, provincia_sel=provincia_sel,
+                   col_prov=col_prov, gdf_provincias=gdf_provincias, gdf_oceano=gdf_oceano)
+    
+    plt.subplots_adjust(top=0.98, bottom=0.02, left=0.02, right=0.98, hspace=0.2, wspace=0.05)
+    
+    rect_frame = fig.add_axes([0, 0, 1, 1], frameon=False)
+    rect_frame.set_xticks([])
+    rect_frame.set_yticks([])
+    rect_frame.patch.set_visible(False)
+    for spine in rect_frame.spines.values():
+        spine.set_visible(True)
+        spine.set_linewidth(2)
+        spine.set_color('black')
+    
+    print("\n💾 Guardando mapa final en carpeta de usuario...")
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    nombre_base = f"MAPA_VIAS_{distrito_sel.replace(' ', '_')}_{timestamp}.png"
+    ruta_guardado_final = os.path.join(carpeta_salida, nombre_base)
+    
+    plt.savefig(ruta_guardado_final, dpi=300, bbox_inches='tight', pad_inches=0.01)
+    plt.close(fig)
+    
+    print(f"✅ Mapa de vías guardado exitosamente en: {ruta_guardado_final}")
+    
+    return ruta_guardado_final
+
+# Para ejecutar el script (ejemplo):
+# if __name__ == '__main__':
+#     generar_mapa_vias(
+#         nombre_usuario="EJEMPLO_USER",
+#         departamento_sel="CUSCO",
+#         provincia_sel="ANTA",
+#         distrito_sel="LIMATAMBO"
+#     )

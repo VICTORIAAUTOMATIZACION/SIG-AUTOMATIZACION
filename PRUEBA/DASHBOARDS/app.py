@@ -10,6 +10,7 @@ from geografica_final import generar_mapa_final
 from geomorfologia_final import generar_mapa_geomorfologia
 from climatica_final import generar_mapa_climatica
 from poblacion_final import generar_mapa_poblacion
+from vias_final import generar_mapa_vias  # ← IMPORTACIÓN AGREGADA
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
 VALID_USERS = {'admin': 'admin', 'usuario': 'admin'}
@@ -144,7 +145,7 @@ def update_summary(user_name, map_type, departamento, provincia, distrito):
     if distrito: summary_items.append(html.Li(f"🏘️ Dist: {distrito}"))
     return html.Ul(summary_items, className='list-unstyled')
 
-# CALLBACK DE GENERACIÓN - CORREGIDO
+# CALLBACK DE GENERACIÓN - ACTUALIZADO CON VÍAS
 @app.callback(
     Output('map-container', 'children'),
     Output('map-filepath-store', 'data'),
@@ -174,11 +175,8 @@ def generate_and_save_map_callback(n_clicks, user_name, map_type, departamento, 
             ruta_guardado = generar_mapa_climatica(user_name, departamento, provincia, distrito)
         
         elif map_type == 'vias':
-            # PLACEHOLDER: Aquí irá la lógica para el mapa de vías
-            return dbc.Alert([
-                html.H4("🛣️ Mapa de Vías", className="alert-heading"),
-                html.P("Esta funcionalidad está en desarrollo. Pronto estará disponible.")
-            ], color="warning"), None
+            print(f"\n🛣️ Generando mapa de vías para {distrito}...")
+            ruta_guardado = generar_mapa_vias(user_name, departamento, provincia, distrito)
         
         elif map_type == 'centros':
             print(f"\n🏘️ Generando mapa de centros poblados para {distrito}...")
@@ -234,7 +232,7 @@ def generate_and_save_map_callback(n_clicks, user_name, map_type, departamento, 
         )
         return error_alert, None
 
-# CALLBACK PARA DESCARGA - CORREGIDO
+# CALLBACK PARA DESCARGA
 @app.callback(
     Output('download-map-image', 'data'),
     Input('download-button', 'n_clicks'),
@@ -277,7 +275,7 @@ if __name__ == '__main__':
     print("\n" + "="*80)
     print("🚀 INICIANDO SERVIDOR DASH".center(80))
     print("="*80)
-    print(f"📍 Puerto: 8051")
+    print(f"🔌 Puerto: 8051")
     print(f"🌐 URL: http://127.0.0.1:8051")
     print("="*80 + "\n")
     
