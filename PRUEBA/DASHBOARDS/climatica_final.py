@@ -331,13 +331,33 @@ def generar_mapa_climatica(nombre_usuario, departamento_sel, provincia_sel, dist
         print(f"   ⚠️ No se pudo cargar el mapa base: {e}")
         ax_main.set_facecolor("#e8e8e8")
 
-    # --- DIBUJAR CLASIFICACIÓN CLIMÁTICA ---
+    # --- DIBUJAR CLASIFICACIÓN CLIMÁTICA CON ETIQUETAS ---
     if gdf_clima_clipped is not None and not gdf_clima_clipped.empty:
         print("   🌡️ Dibujando unidades climáticas...")
         for idx, unidad in enumerate(unidades_clima):
             gdf_unidad = gdf_clima_clipped[gdf_clima_clipped[col_clima] == unidad]
             gdf_unidad.plot(ax=ax_main, color=paleta_clima[idx], edgecolor='black',
                            linewidth=0.5, alpha=0.7, zorder=4)
+            
+            # Agregar etiqueta en el centroide de cada unidad
+            try:
+                centroid = gdf_unidad.geometry.unary_union.centroid
+                # Truncar nombre si es muy largo
+                nombre_etiqueta = str(unidad)[:25] + '...' if len(str(unidad)) > 25 else str(unidad)
+                ax_main.text(
+                    centroid.x, centroid.y,
+                    nombre_etiqueta,
+                    fontsize=7,
+                    ha='center',
+                    va='center',
+                    color='white',
+                    fontweight='bold',
+                    bbox=dict(boxstyle='round,pad=0.3', facecolor='black', alpha=0.7, edgecolor='none'),
+                    zorder=10,
+                    path_effects=[path_effects.withStroke(linewidth=2, foreground='black')]
+                )
+            except Exception as e:
+                print(f"   ⚠️ No se pudo agregar etiqueta para {unidad}: {e}")
 
     # --- LÍMITE DEL DISTRITO ---
     if not gdf_distrito.empty:
