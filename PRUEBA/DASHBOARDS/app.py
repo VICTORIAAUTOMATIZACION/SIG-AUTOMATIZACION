@@ -10,7 +10,8 @@ from geografica_final import generar_mapa_final
 from geomorfologia_final import generar_mapa_geomorfologia
 from climatica_final import generar_mapa_climatica
 from poblacion_final import generar_mapa_poblacion
-from vias_final import generar_mapa_vias  # ← IMPORTACIÓN AGREGADA
+from vias_final import generar_mapa_vias
+from pendientes_final import generar_mapa_pendientes  # ← NUEVA IMPORTACIÓN
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
 VALID_USERS = {'admin': 'admin', 'usuario': 'admin'}
@@ -67,6 +68,7 @@ dashboard_layout = dbc.Container([
                             {'label': '🗺️ Mapa de Ubicación Geográfica', 'value': 'geografico'},
                             {'label': '🌄 Mapa de Geomorfología', 'value': 'geomorfologia'},
                             {'label': '🌡️ Mapa de Clasificación Climática', 'value': 'climatica'},
+                            {'label': '📐 Mapa de Pendientes', 'value': 'pendientes'},  # ← NUEVA OPCIÓN
                             {'label': '🛣️ Mapa de Vías', 'value': 'vias'},
                             {'label': '🏘️ Mapa de Centros Poblados', 'value': 'centros'}
                         ], 
@@ -134,6 +136,7 @@ def update_summary(user_name, map_type, departamento, provincia, distrito):
         'geografico': 'Ubicación Geográfica',
         'geomorfologia': 'Geomorfología',
         'climatica': 'Clasificación Climática',
+        'pendientes': 'Pendientes',  # ← NUEVA ENTRADA
         'vias': 'Vías',
         'centros': 'Centros Poblados'
     }
@@ -145,7 +148,7 @@ def update_summary(user_name, map_type, departamento, provincia, distrito):
     if distrito: summary_items.append(html.Li(f"🏘️ Dist: {distrito}"))
     return html.Ul(summary_items, className='list-unstyled')
 
-# CALLBACK DE GENERACIÓN - ACTUALIZADO CON VÍAS
+# CALLBACK DE GENERACIÓN - ACTUALIZADO CON PENDIENTES
 @app.callback(
     Output('map-container', 'children'),
     Output('map-filepath-store', 'data'),
@@ -173,6 +176,14 @@ def generate_and_save_map_callback(n_clicks, user_name, map_type, departamento, 
         elif map_type == 'climatica':
             print(f"\n🌡️ Generando mapa climático para {distrito}...")
             ruta_guardado = generar_mapa_climatica(user_name, departamento, provincia, distrito)
+        
+        elif map_type == 'pendientes':  # ← NUEVA CONDICIÓN
+            print(f"\n📐 Generando mapa de pendientes para {distrito}...")
+            # Especificar ruta explícita del DEM
+            ruta_dem_explicita = '/workspaces/SIG-AUTOMATIZACION/PRUEBA/DATA/PENDIENTES/DEM.nc'
+            print(f"   Usando DEM: {ruta_dem_explicita}")
+            print(f"   Archivo existe: {os.path.exists(ruta_dem_explicita)}")
+            ruta_guardado = generar_mapa_pendientes(user_name, departamento, provincia, distrito, ruta_dem=ruta_dem_explicita)
         
         elif map_type == 'vias':
             print(f"\n🛣️ Generando mapa de vías para {distrito}...")
@@ -209,6 +220,7 @@ def generate_and_save_map_callback(n_clicks, user_name, map_type, departamento, 
                     html.Ul([
                         html.Li("Que los datos geográficos estén disponibles"),
                         html.Li("Que el distrito seleccionado sea correcto"),
+                        html.Li("Para pendientes: que exista el archivo DEM.nc en /DATA/PENDIENTES/"),
                         html.Li("Los logs en la terminal para más detalles")
                     ])
                 ],
