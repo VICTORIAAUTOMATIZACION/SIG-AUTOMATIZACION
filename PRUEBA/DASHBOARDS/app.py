@@ -11,7 +11,7 @@ from geomorfologia_final import generar_mapa_geomorfologia
 from climatica_final import generar_mapa_climatica
 from poblacion_final import generar_mapa_poblacion
 from vias_final import generar_mapa_vias
-from pendientes_final import generar_mapa_pendientes  # ← IMPORTACIÓN ACTUALIZADA
+from pendientes_final import generar_mapa_pendientes  # → IMPORTACIÓN ACTUALIZADA
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
 VALID_USERS = {'admin': 'admin', 'usuario': 'admin'}
@@ -148,29 +148,7 @@ def update_summary(user_name, map_type, departamento, provincia, distrito):
     if distrito: summary_items.append(html.Li(f"🏘️ Dist: {distrito}"))
     return html.Ul(summary_items, className='list-unstyled')
 
-# FUNCIÓN AUXILIAR PARA BUSCAR DEM (TIF o NC)
-def buscar_archivo_dem():
-    """Busca el archivo DEM en formato TIF o NC"""
-    rutas_posibles = [
-        '/workspaces/SIG-AUTOMATIZACION/PRUEBA/DATA/PENDIENTES/DEM.tif',
-        '/workspaces/SIG-AUTOMATIZACION/PRUEBA/DATA/PENDIENTES/DEM.nc',
-        '/workspaces/SIG-AUTOMATIZACION/PRUEBA/DATA/PENDIENTES/DEM.tiff',
-    ]
-    
-    for ruta in rutas_posibles:
-        if os.path.exists(ruta):
-            return ruta
-    
-    # Buscar cualquier archivo DEM en la carpeta
-    carpeta_pendientes = '/workspaces/SIG-AUTOMATIZACION/PRUEBA/DATA/PENDIENTES/'
-    if os.path.exists(carpeta_pendientes):
-        for archivo in os.listdir(carpeta_pendientes):
-            if archivo.upper().startswith('DEM') and archivo.lower().endswith(('.tif', '.tiff', '.nc')):
-                return os.path.join(carpeta_pendientes, archivo)
-    
-    return None
-
-# CALLBACK DE GENERACIÓN - ACTUALIZADO CON DETECCIÓN AUTOMÁTICA DE DEM
+# CALLBACK DE GENERACIÓN - ACTUALIZADO PARA PENDIENTES CLASIFICADAS
 @app.callback(
     Output('map-container', 'children'),
     Output('map-filepath-store', 'data'),
@@ -199,28 +177,22 @@ def generate_and_save_map_callback(n_clicks, user_name, map_type, departamento, 
             print(f"\n🌡️ Generando mapa climático para {distrito}...")
             ruta_guardado = generar_mapa_climatica(user_name, departamento, provincia, distrito)
         
-        elif map_type == 'pendientes':  # ← LÓGICA ACTUALIZADA
+        elif map_type == 'pendientes':  # → LÓGICA SIMPLIFICADA
             print(f"\n📐 Generando mapa de pendientes para {distrito}...")
             
-            # Buscar automáticamente el archivo DEM
-            ruta_dem = buscar_archivo_dem()
+            # Verificar que el archivo de pendientes clasificadas existe
+            ruta_pendientes = "/workspaces/SIG-AUTOMATIZACION/PRUEBA/DATA/PENDIENTES/pendientes.tif"
             
-            if ruta_dem:
-                print(f"   ✅ DEM encontrado: {ruta_dem}")
-                print(f"   📏 Tamaño: {os.path.getsize(ruta_dem) / (1024*1024):.2f} MB")
-                
-                # Determinar si es TIF o NC y llamar a la función correspondiente
-                if ruta_dem.lower().endswith(('.tif', '.tiff')):
-                    print(f"   🔍 Formato detectado: GeoTIFF")
-                    ruta_guardado = generar_mapa_pendientes(user_name, departamento, provincia, distrito, ruta_dem=ruta_dem)
-                elif ruta_dem.lower().endswith('.nc'):
-                    print(f"   🔍 Formato detectado: NetCDF")
-                    # Si tienes una función específica para NetCDF, úsala aquí
-                    ruta_guardado = generar_mapa_pendientes(user_name, departamento, provincia, distrito, ruta_dem=ruta_dem)
-            else:
-                print(f"   ❌ ERROR: No se encontró archivo DEM en:")
-                print(f"      /workspaces/SIG-AUTOMATIZACION/PRUEBA/DATA/PENDIENTES/")
-                raise FileNotFoundError("No se encontró el archivo DEM (TIF o NC)")
+            if not os.path.exists(ruta_pendientes):
+                print(f"❌ ERROR: No se encontró archivo de pendientes en:")
+                print(f"   {ruta_pendientes}")
+                raise FileNotFoundError(f"Archivo de pendientes no encontrado: {ruta_pendientes}")
+            
+            print(f"✅ Archivo de pendientes encontrado: {ruta_pendientes}")
+            print(f"📊 Tamaño: {os.path.getsize(ruta_pendientes) / (1024*1024):.2f} MB")
+            
+            # Llamar a la función sin parámetro de ruta DEM
+            ruta_guardado = generar_mapa_pendientes(user_name, departamento, provincia, distrito)
         
         elif map_type == 'vias':
             print(f"\n🛣️ Generando mapa de vías para {distrito}...")
@@ -244,7 +216,7 @@ def generate_and_save_map_callback(n_clicks, user_name, map_type, departamento, 
                     html.Hr(),
                     html.P("📂 Archivo guardado:", className="mb-1 fw-bold"),
                     html.Code(os.path.basename(ruta_guardado), style={'fontSize': '0.9em'}),
-                    html.P(f"📏 Tamaño: {file_size_mb:.2f} MB", className="mb-1 text-muted"),
+                    html.P(f"📊 Tamaño: {file_size_mb:.2f} MB", className="mb-1 text-muted"),
                     html.Hr(),
                     html.P("💡 Haz clic en 'Descargar Mapa Generado' para obtener el archivo.", className="mb-0")
                 ],
@@ -262,7 +234,7 @@ def generate_and_save_map_callback(n_clicks, user_name, map_type, departamento, 
                     html.Ul([
                         html.Li("Que los datos geográficos estén disponibles"),
                         html.Li("Que el distrito seleccionado sea correcto"),
-                        html.Li("Para pendientes: que exista DEM.tif o DEM.nc en /DATA/PENDIENTES/"),
+                        html.Li("Para pendientes: que exista pendientes.tif en /DATA/PENDIENTES/"),
                         html.Li("Los logs en la terminal para más detalles")
                     ])
                 ],
@@ -274,15 +246,13 @@ def generate_and_save_map_callback(n_clicks, user_name, map_type, departamento, 
         print(f"❌ Archivo no encontrado: {str(e)}")
         error_alert = dbc.Alert(
             [
-                html.H4("❌ Archivo DEM no encontrado", className="alert-heading"),
-                html.P("No se pudo localizar el archivo de elevación digital (DEM)."),
+                html.H4("❌ Archivo de pendientes no encontrado", className="alert-heading"),
+                html.P("No se pudo localizar el archivo de pendientes clasificadas."),
                 html.Hr(),
                 html.P("Ubicación esperada:", className="mb-1 fw-bold"),
-                html.Code("/workspaces/SIG-AUTOMATIZACION/PRUEBA/DATA/PENDIENTES/DEM.tif"),
-                html.P("o", className="text-center my-2"),
-                html.Code("/workspaces/SIG-AUTOMATIZACION/PRUEBA/DATA/PENDIENTES/DEM.nc"),
+                html.Code("/workspaces/SIG-AUTOMATIZACION/PRUEBA/DATA/PENDIENTES/pendientes.tif"),
                 html.Hr(),
-                html.P("Por favor, asegúrate de que el archivo DEM esté disponible en esa ubicación.", className="mb-0")
+                html.P("Por favor, asegúrate de que el archivo pendientes.tif esté disponible en esa ubicación.", className="mb-0")
             ],
             color="warning"
         )
@@ -349,26 +319,25 @@ if __name__ == '__main__':
         print("="*80 + "\n")
         print(f"Error específico: {e}")
     
-    # Verificar existencia del archivo DEM al inicio
+    # Verificar existencia del archivo de pendientes al inicio
     print("\n" + "="*80)
-    print("🔍 VERIFICANDO ARCHIVO DEM".center(80))
+    print("📐 VERIFICANDO ARCHIVO DE PENDIENTES".center(80))
     print("="*80)
     
-    ruta_dem = buscar_archivo_dem()
-    if ruta_dem:
-        print(f"✅ DEM encontrado: {ruta_dem}")
-        print(f"📏 Tamaño: {os.path.getsize(ruta_dem) / (1024*1024):.2f} MB")
+    ruta_pendientes = "/workspaces/SIG-AUTOMATIZACION/PRUEBA/DATA/PENDIENTES/pendientes.tif"
+    if os.path.exists(ruta_pendientes):
+        print(f"✅ Archivo de pendientes encontrado: {ruta_pendientes}")
+        print(f"📊 Tamaño: {os.path.getsize(ruta_pendientes) / (1024*1024):.2f} MB")
     else:
-        print("⚠️ ADVERTENCIA: No se encontró archivo DEM")
-        print("   Ubicación esperada: /workspaces/SIG-AUTOMATIZACION/PRUEBA/DATA/PENDIENTES/")
-        print("   Archivos buscados: DEM.tif, DEM.nc")
+        print("⚠️ ADVERTENCIA: No se encontró archivo de pendientes")
+        print(f"   Ubicación esperada: {ruta_pendientes}")
         print("   El mapa de pendientes no funcionará hasta que se agregue el archivo.")
     print("="*80 + "\n")
     
     print("\n" + "="*80)
     print("🚀 INICIANDO SERVIDOR DASH".center(80))
     print("="*80)
-    print(f"🔌 Puerto: 8051")
+    print(f"📌 Puerto: 8051")
     print(f"🌐 URL: http://127.0.0.1:8051")
     print("="*80 + "\n")
     

@@ -1,4 +1,5 @@
-# Archivo: pendientes_final_geotiff.py
+# -*- coding: utf-8 -*-
+"""pendientes_final.py - VERSIÓN CON ESTRUCTURA UNIFICADA"""
 
 import geopandas as gpd
 import matplotlib.pyplot as plt
@@ -15,190 +16,75 @@ from matplotlib.lines import Line2D
 import datetime
 import rasterio
 from rasterio.mask import mask as rio_mask
-from rasterio.warp import calculate_default_transform, reproject, Resampling
 from matplotlib.colors import BoundaryNorm
 from matplotlib import colors
 
-# --- RUTA BASE ORIGINAL ---
+# --- RUTA BASE ---
 ruta_base = "/workspaces/SIG-AUTOMATIZACION/PRUEBA"
-
 AMARILLO_CLARO = "#FFEE58"
 
 # PALETA DE COLORES PARA PENDIENTES
 COLORES_PENDIENTE = ['#7FBF3F', '#BFDF3F', '#FFFF00', '#FF9F00', '#FF0000']
 ETIQUETAS_PENDIENTE = ['< 5°', '5° - 15°', '15° - 25°', '25° - 45°', '> 45°']
 
-# FUNCION PARA CALCULAR PENDIENTES DESDE GEOTIFF
-def calcular_pendientes_desde_geotiff(ruta_dem, gdf_distrito):
-    """Calcula pendientes desde un archivo DEM GeoTIFF y las recorta al distrito"""
-    print("   Abriendo archivo DEM GeoTIFF...")
-    
+def cargar_y_recortar_raster(ruta_pendientes, gdf_distrito):
+    """Carga el raster, lo reproyecta a 3857 y lo recorta al distrito"""
     try:
-        # Verificar que el archivo existe
-        if not os.path.exists(ruta_dem):
-            print(f"   ERROR: El archivo no existe: {ruta_dem}")
-            return None, None
+        import pyproj
+        from rasterio.warp import calculate_default_transform, reproject, Resampling
+        from rasterio.features import geometry_mask
         
-        print(f"   Archivo encontrado: {ruta_dem}")
-        print(f"   Tamaño del archivo: {os.path.getsize(ruta_dem) / (1024*1024):.2f} MB")
-        
-        # Abrir el archivo raster primero para obtener su CRS
-        with rasterio.open(ruta_dem) as src:
-            print(f"   DEM abierto correctamente")
-            print(f"   CRS del DEM: {src.crs}")
-            print(f"   Dimensiones: {src.width} x {src.height}")
-            print(f"   Bounds: {src.bounds}")
-            print(f"   Resolución: {src.res}")
+        with rasterio.open(ruta_pendientes) as src:
+            print(f"   CRS del raster original: {src.crs}")
             
-            # Reproyectar el distrito al CRS del DEM (CRÍTICO!)
-            print(f"   CRS original del distrito: {gdf_distrito.crs}")
-            gdf_distrito_reproj = gdf_distrito.to_crs(src.crs)
-            print(f"   Distrito reproyectado a: {gdf_distrito_reproj.crs}")
-            print(f"   Bounds del distrito reproyectado: {gdf_distrito_reproj.total_bounds}")
+            # PASO 1: Reproyectar raster a 3857 PRIMERO
+            src_crs = src.crs
+            dst_crs = rasterio.crs.CRS.from_epsg(3857)
             
-            # Recortar el DEM al área del distrito
-            from shapely.geometry import mapping
-            geoms = [mapping(geom) for geom in gdf_distrito_reproj.geometry]
+            transform_3857, width_3857, height_3857 = calculate_default_transform(
+                src_crs, dst_crs, src.width, src.height,
+                src.bounds.left, src.bounds.bottom, src.bounds.right, src.bounds.top
+            )
             
-            try:
-                out_image, out_transform = rio_mask(src, geoms, crop=True, filled=False)
-                elevation = out_image[0]  # Primera banda
-                
-                print(f"   DEM recortado al área del distrito")
-                print(f"   Shape de elevación: {elevation.shape}")
-                
-                # Calcular resolución espacial en metros (ya está en metros si es UTM)
-                lat_res = abs(src.res[1])
-                lon_res = abs(src.res[0])
-                
-                # Si el DEM está en UTM, la resolución ya está en metros
-                if src.crs.is_projected:
-                    dx = lon_res
-                    dy = lat_res
-                    print(f"   DEM en proyección UTM - Resolución ya en metros")
-                else:
-                    # Si está en grados, convertir a metros
-                    centro_lat = gdf_distrito_reproj.geometry.centroid.y.iloc[0]
-                    dy = lat_res * 111000
-                    dx = lon_res * 111000 * np.cos(np.radians(centro_lat))
-                    print(f"   DEM en grados - Convirtiendo a metros")
-                
-                print(f"   Resolución espacial: dx={dx:.2f}m, dy={dy:.2f}m")
-                
-                # Reemplazar valores NoData con NaN
-                if src.nodata is not None:
-                    elevation = np.where(elevation == src.nodata, np.nan, elevation)
-                
-                # Calcular gradientes usando diferencias finitas
-                # Gradiente en X (Este-Oeste)
-                grad_x = np.zeros_like(elevation)
-                grad_x[:, 1:-1] = (elevation[:, 2:] - elevation[:, :-2]) / (2 * dx)
-                grad_x[:, 0] = (elevation[:, 1] - elevation[:, 0]) / dx
-                grad_x[:, -1] = (elevation[:, -1] - elevation[:, -2]) / dx
-                
-                # Gradiente en Y (Norte-Sur)
-                grad_y = np.zeros_like(elevation)
-                grad_y[1:-1, :] = (elevation[2:, :] - elevation[:-2, :]) / (2 * dy)
-                grad_y[0, :] = (elevation[1, :] - elevation[0, :]) / dy
-                grad_y[-1, :] = (elevation[-1, :] - elevation[-2, :]) / dy
-                
-                # Calcular pendiente en grados
-                slope = np.arctan(np.sqrt(grad_x**2 + grad_y**2)) * (180 / np.pi)
-                
-                # Clasificar pendientes
-                slope_classes = np.zeros_like(slope)
-                slope_classes[slope < 5] = 1
-                slope_classes[(slope >= 5) & (slope < 15)] = 2
-                slope_classes[(slope >= 15) & (slope < 25)] = 3
-                slope_classes[(slope >= 25) & (slope < 45)] = 4
-                slope_classes[slope >= 45] = 5
-                
-                print(f"   Pendientes calculadas correctamente")
-                
-                # Crear GeoDataFrame con el raster de pendientes
-                print(f"   Creando GeoDataFrame de pendientes...")
-                geometrias = []
-                valores_clase = []
-                
-                # Obtener las coordenadas de cada celda
-                rows, cols = np.where(~np.isnan(slope_classes) & (slope_classes > 0))
-                
-                total_celdas = len(rows)
-                print(f"   Procesando {total_celdas} celdas con datos válidos...")
-                
-                for idx, (row, col) in enumerate(zip(rows, cols)):
-                    # Obtener coordenadas de la celda en el CRS del DEM
-                    x_min, y_max = out_transform * (col, row)
-                    x_max, y_min = out_transform * (col + 1, row + 1)
-                    
-                    # Crear polígono en el CRS del DEM
-                    poly_dem_crs = box(x_min, y_min, x_max, y_max)
-                    
-                    # Convertir al CRS de salida (EPSG:3857)
-                    transformer = pyproj.Transformer.from_crs(src.crs, 3857, always_xy=True)
-                    
-                    # Transformar las esquinas
-                    coords = list(poly_dem_crs.exterior.coords)
-                    coords_3857 = [transformer.transform(x, y) for x, y in coords]
-                    
-                    from shapely.geometry import Polygon as ShapelyPolygon
-                    poly_3857 = ShapelyPolygon(coords_3857)
-                    
-                    geometrias.append(poly_3857)
-                    valores_clase.append(slope_classes[row, col])
-                    
-                    # Mostrar progreso cada 10%
-                    if idx % max(1, total_celdas // 10) == 0:
-                        print(f"   Progreso: {(idx/total_celdas)*100:.1f}%")
-                
-                print(f"   Total de celdas procesadas: {len(geometrias)}")
-                
-                if len(geometrias) == 0:
-                    print("   ERROR: No se generaron geometrías válidas")
-                    return None, None
-                
-                # Crear GeoDataFrame
-                gdf_pendientes = gpd.GeoDataFrame({
-                    'clase_pendiente': valores_clase
-                }, geometry=geometrias, crs='EPSG:3857')
-                
-                print(f"   GeoDataFrame creado con {len(gdf_pendientes)} polígonos")
-                
-                # Calcular estadísticas
-                stats = {
-                    'min': float(np.nanmin(slope)),
-                    'max': float(np.nanmax(slope)),
-                    'mean': float(np.nanmean(slope)),
-                    'median': float(np.nanmedian(slope))
-                }
-                
-                # Contar celdas por clase
-                total_celdas = len(gdf_pendientes)
-                clases_count = {
-                    1: int(len(gdf_pendientes[gdf_pendientes['clase_pendiente'] == 1])),
-                    2: int(len(gdf_pendientes[gdf_pendientes['clase_pendiente'] == 2])),
-                    3: int(len(gdf_pendientes[gdf_pendientes['clase_pendiente'] == 3])),
-                    4: int(len(gdf_pendientes[gdf_pendientes['clase_pendiente'] == 4])),
-                    5: int(len(gdf_pendientes[gdf_pendientes['clase_pendiente'] == 5]))
-                }
-                
-                stats['clases'] = clases_count
-                stats['total'] = total_celdas
-                
-                return gdf_pendientes, stats
-                
-            except ValueError as e:
-                print(f"   ERROR al recortar el DEM: {e}")
-                print("   Posiblemente el distrito está fuera del área del DEM")
-                return None, None
-        
+            raster_data_3857 = np.empty((height_3857, width_3857), dtype=src.read(1).dtype)
+            
+            raster_original = src.read(1)
+            
+            reproject(
+                raster_original,
+                raster_data_3857,
+                src_transform=src.transform,
+                src_crs=src_crs,
+                dst_transform=transform_3857,
+                dst_crs=dst_crs,
+                resampling=Resampling.nearest
+            )
+            
+            print(f"   Raster reproyectado a EPSG:3857")
+            
+            # PASO 2: Recortar al distrito YA en 3857
+            mask = geometry_mask(
+                gdf_distrito.geometry,
+                out_shape=raster_data_3857.shape,
+                transform=transform_3857,
+                invert=True
+            )
+            
+            raster_masked = np.where(mask, raster_data_3857, np.nan)
+            
+            print(f"   Raster recortado a geometría del distrito")
+            
+            return raster_masked, transform_3857, dst_crs
+            
     except Exception as e:
-        print(f"   ERROR calculando pendientes: {e}")
+        print(f"   ERROR: {e}")
         import traceback
         traceback.print_exc()
-        return None, None
+        return None, None, None
 
-# FUNCIONES AUXILIARES (sin cambios)
+# ════════════════════════════════════════════════════════════════════════
+# FUNCIONES AUXILIARES
+# ════════════════════════════════════════════════════════════════════════
 def add_north_arrow_blanco_completo(ax, xy_pos=(0.93, 0.08), size=0.06):
     x_pos, y_pos = xy_pos
     s = size / 2
@@ -234,7 +120,6 @@ def calculate_numeric_scale(ax, fig):
     ax_pos = ax.get_position()
     ax_width_in = fig_width_in * ax_pos.width
     scale_denominator = ground_width_m / (ax_width_in * 0.0254)
-    
     rounding = 5000 if scale_denominator > 100000 else 1000 if scale_denominator > 10000 else 500
     scale_rounded = int(round(scale_denominator / rounding) * rounding)
     return f"1:{scale_rounded:,}"
@@ -263,25 +148,18 @@ def add_membrete(ax, dpto, prov, dist, main_map_ax, fig_obj):
     ax.plot([7.5, 7.5], [0, 3], color='black', lw=1.2)
     
     padding = 0.15
-    
     ax.text(0 + padding, 3.5, "MAPA:", fontweight='bold', va='center', fontsize=8)
     ax.text(1.8 + padding, 3.5, info["MAPA"], va='center', fontsize=8)
-    
     ax.text(0 + padding, 2.6, "DPTO:", fontweight='bold', va='center', fontsize=8)
     ax.text(0 + padding, 2.0, info["DPTO"], va='center', fontsize=8)
-    
     ax.text(2.5 + padding, 2.6, "PROVINCIA:", fontweight='bold', va='center', fontsize=8)
     ax.text(2.5 + padding, 2.0, info["PROVINCIA"], va='center', fontsize=8)
-    
     ax.text(5 + padding, 2.6, "DISTRITO:", fontweight='bold', va='center', fontsize=8)
     ax.text(5 + padding, 2.0, info["DISTRITO"], va='center', fontsize=8)
-    
-    ax.text(7.5 + padding, 2.5, "MAPA N°", fontweight='bold', ha='left', va='center', fontsize=8)
+    ax.text(7.5 + padding, 2.5, "MAPA Nº", fontweight='bold', ha='left', va='center', fontsize=8)
     ax.text(7.5 + padding, 0.8, info["MAPA_N"], ha='left', va='center', fontsize=10)
-    
     ax.text(0 + padding, 1.0, "ESCALA:", fontweight='bold', va='center', fontsize=8)
     ax.text(0 + padding, 0.5, info["ESCALA"], va='center', fontsize=8)
-    
     ax.text(5 + padding, 1.0, "FECHA:", fontweight='bold', va='center', fontsize=8)
     ax.text(5 + padding, 0.5, info["FECHA"], va='center', fontsize=8)
 
@@ -297,14 +175,13 @@ def cargar_shapefile(nombre, alias):
     if not path:
         print(f"   No se encontró shapefile: {alias}")
         return None
-    
     try:
         gdf = gpd.read_file(path)
         if gdf.crs is None or gdf.crs.to_epsg() != 4326:
             gdf.set_crs(epsg=4326, inplace=True)
         return gdf.to_crs(epsg=3857)
     except Exception as e:
-        print(f"   Error cargando {alias} desde {path}: {e}")
+        print(f"   Error cargando {alias}: {e}")
         return None
 
 def grillado_utm_proyectado(ax, bbox, ndiv=8):
@@ -443,49 +320,20 @@ def mapa_ubicacion(ax, gdf_base_map, gdf_context, gdf_focus, titulo, etiqueta, t
     ax.set_aspect('equal', adjustable='box')
     ax.axis('on')
 
-# FUNCION PARA BUSCAR EL ARCHIVO DEM
-def buscar_archivo_dem():
-    """Busca el archivo DEM (TIF o NC) en la estructura del proyecto"""
-    extensiones = ['.tif', '.tiff', '.nc']
-    rutas_base = [
-        f"{ruta_base}/DATA/PENDIENTES/",
-        "/workspaces/SIG-AUTOMATIZACION/PRUEBA/DATA/PENDIENTES/",
-        "/content/",
-        "./"
-    ]
-    
-    for ruta in rutas_base:
-        if os.path.exists(ruta):
-            for ext in extensiones:
-                archivo = os.path.join(ruta, f"DEM{ext}")
-                if os.path.exists(archivo):
-                    print(f"   DEM encontrado en: {archivo}")
-                    return archivo
-    
-    print("   No se encontró el archivo DEM en ninguna ubicación")
-    return None
-
-# FUNCION PRINCIPAL DE GENERACION DE MAPA DE PENDIENTES
-def generar_mapa_pendientes(nombre_usuario, departamento_sel, provincia_sel, distrito_sel, ruta_dem=None):
+# ════════════════════════════════════════════════════════════════════════
+# FUNCIÓN PRINCIPAL DE GENERACIÓN DE MAPA DE PENDIENTES
+# ════════════════════════════════════════════════════════════════════════
+def generar_mapa_pendientes(nombre_usuario, departamento_sel, provincia_sel, distrito_sel):
     print("\n" + "="*80)
     print("INICIANDO PROCESO DE GENERACION DE MAPA DE PENDIENTES...")
     print(f"   - Usuario: {nombre_usuario}")
     print(f"   - Ubicación: {distrito_sel}, {provincia_sel}, {departamento_sel}")
+
+    ruta_pendientes = "/workspaces/SIG-AUTOMATIZACION/PRUEBA/DATA/PENDIENTES/pendientes.tif"
     
-    # Si no se proporciona ruta, buscar automáticamente
-    if ruta_dem is None:
-        print("\nBuscando archivo DEM...")
-        ruta_dem = buscar_archivo_dem()
-        if ruta_dem is None:
-            print("ERROR: No se puede continuar sin el archivo DEM")
-            return None
-    
-    # Verificar que el archivo existe
-    if not os.path.exists(ruta_dem):
-        print(f"ERROR: El archivo DEM no existe: {ruta_dem}")
+    if not os.path.exists(ruta_pendientes):
+        print(f"ERROR: El archivo de pendientes no existe: {ruta_pendientes}")
         return None
-    
-    print(f"   - DEM: {ruta_dem}")
     
     try:
         carpeta_usuario = os.path.join(ruta_base, "USUARIOS", nombre_usuario)
@@ -495,12 +343,12 @@ def generar_mapa_pendientes(nombre_usuario, departamento_sel, provincia_sel, dis
     except Exception as e:
         print(f"Error creando la estructura de carpetas para el usuario: {e}")
         return None
-    
+
     print("\nCargando capas base...")
     gdf_departamentos = cargar_shapefile("departamento", "Departamentos")
     gdf_provincias = cargar_shapefile("provincia", "Provincias")
     gdf_distritos = cargar_shapefile("distrito", "Distritos del Perú")
-    
+
     try:
         gdf_paises = gpd.read_file(f"{ruta_base}/DATA/MAPA DE UBICACION/PAISES DE SUDAMERICA/Sudamerica.shp").to_crs(3857)
         gdf_oceano = gpd.read_file(f"{ruta_base}/DATA/MAPA DE UBICACION/OCEANO/Oceano.shp").to_crs(3857)
@@ -508,256 +356,205 @@ def generar_mapa_pendientes(nombre_usuario, departamento_sel, provincia_sel, dis
         print(f"Error cargando shapefiles de Países u Océano: {e}")
         gdf_paises = None
         gdf_oceano = None
-    
+
     if gdf_departamentos is None or gdf_provincias is None or gdf_distritos is None:
         print("Faltan capas base (departamento, provincia o distrito). Abortando.")
         return None
-    
+
     col_dpto = next((c for c in ['NOMBDEP', 'DEPARTAMEN'] if c in gdf_departamentos.columns), None)
     col_prov = next((c for c in ['NOMBPROV', 'PROVINCIA'] if c in gdf_provincias.columns), None)
     col_distr = next((c for c in ['NOMBDIST', 'DISTRITO'] if c in gdf_distritos.columns), None)
-    
+
     if not all([col_dpto, col_prov, col_distr]):
         print("No se pudieron identificar las columnas de nombres en los shapefiles")
         return None
-    
+
     print("\nFiltrando datos del área seleccionada...")
     gdf_dpto_sel = gdf_departamentos[gdf_departamentos[col_dpto] == departamento_sel]
     gdf_prov_sel = gdf_provincias[gdf_provincias[col_prov] == provincia_sel]
     gdf_distrito = gdf_distritos[(gdf_distritos[col_distr] == distrito_sel) & 
                                   (gdf_distritos[col_prov] == provincia_sel)]
     gdf_distritos_en_provincia = gdf_distritos[gdf_distritos[col_prov] == provincia_sel]
-    
+
     if gdf_distrito.empty:
         print(f"Error: No se pudo encontrar la geometría para el distrito '{distrito_sel}'.")
         return None
-    
+
     print(f"   Distrito encontrado con geometría válida")
-    
-    print("\nCalculando pendientes desde DEM GeoTIFF...")
-    resultado = calcular_pendientes_desde_geotiff(ruta_dem, gdf_distrito)
-    
-    # VALIDACION CRITICA: verificar que el resultado sea válido
-    if resultado is None:
-        print("ERROR: calcular_pendientes_desde_geotiff retornó None")
+
+    print("\nRecortando raster al distrito...")
+    raster_data, out_transform, src_crs = cargar_y_recortar_raster(ruta_pendientes, gdf_distrito)
+
+    if raster_data is None:
+        print("ERROR: No se pudo recortar el raster")
         return None
-    
-    # Desempaquetar con validación
-    gdf_pendientes, stats = resultado
-    
-    if gdf_pendientes is None or stats is None:
-        print("ERROR: No se pudieron calcular las pendientes correctamente")
-        return None
-    
-    if gdf_pendientes.empty:
-        print("ERROR: El GeoDataFrame de pendientes está vacío")
-        return None
-    
-    print("\nEstadísticas de pendiente:")
-    print(f"   Pendiente mínima:  {stats['min']:>8.2f}°")
-    print(f"   Pendiente máxima:  {stats['max']:>8.2f}°")
-    print(f"   Pendiente media:   {stats['mean']:>8.2f}°")
-    print(f"   Pendiente mediana: {stats['median']:>8.2f}°")
-    
+
     print("\nGenerando layout del mapa...")
     fig = plt.figure(figsize=(14, 9.9))
     grid = plt.GridSpec(1, 2, width_ratios=[3.0, 1], wspace=0.05)
     gs_izquierda = grid[0, 0].subgridspec(3, 1, height_ratios=[0.08, 3.5, 0.42], hspace=0.08)
-    
+
     ax_titulo = fig.add_subplot(gs_izquierda[0])
     ax_titulo.text(0.5, 0.5, f"MAPA DE PENDIENTES - DISTRITO DE {distrito_sel.upper()}",
                    ha='center', va='center', fontsize=12, fontweight="normal",
                    bbox=dict(boxstyle='square,pad=0.5', facecolor='white', 
                             edgecolor='black', linewidth=1.5, alpha=0.95))
     ax_titulo.axis('off')
-    
+
     ax_main = fig.add_subplot(gs_izquierda[1])
-    
-    # BBOX con aspect ratio consistente
+
+    # BBOX FIJO CON ASPECT RATIO CONSTANTE (como en población_final)
     minx, miny, maxx, maxy = gdf_distrito.total_bounds
     buffer_factor = 0.15
     buffer_x = (maxx - minx) * buffer_factor
     buffer_y = (maxy - miny) * buffer_factor
     bbox_temp = (minx - buffer_x, miny - buffer_y, maxx + buffer_x, maxy + buffer_y)
-    
+
     aspect_ratio_objetivo = 1.21
     cx = (bbox_temp[0] + bbox_temp[2]) / 2
     cy = (bbox_temp[1] + bbox_temp[3]) / 2
     ancho_actual = bbox_temp[2] - bbox_temp[0]
     alto_actual = bbox_temp[3] - bbox_temp[1]
-    
+
     if (ancho_actual / alto_actual) > aspect_ratio_objetivo:
         nuevo_alto = ancho_actual / aspect_ratio_objetivo
         bbox_main = (bbox_temp[0], cy - nuevo_alto/2, bbox_temp[2], cy + nuevo_alto/2)
     else:
         nuevo_ancho = alto_actual * aspect_ratio_objetivo
         bbox_main = (cx - nuevo_ancho/2, bbox_temp[1], cx + nuevo_ancho/2, bbox_temp[3])
-    
+
     ax_main.set_xlim(bbox_main[0], bbox_main[2])
     ax_main.set_ylim(bbox_main[1], bbox_main[3])
     ax_main.set_aspect('equal', adjustable='box')
-    
+
     print("   Descargando imagen satelital...")
     try:
-        ctx.add_basemap(ax_main, source=ctx.providers.Esri.WorldImagery, 
-                       attribution=False, zoom='auto')
+        ctx.add_basemap(ax_main, source=ctx.providers.Esri.WorldImagery, attribution=False, zoom='auto')
     except Exception as e:
         print(f"   No se pudo cargar el mapa base: {e}")
         ax_main.set_facecolor("#e8e8e8")
+
+    # CREAR MÁSCARA: solo mostrar pendientes DENTRO del distrito
+    # Crear un GeoDataFrame con el raster y recortarlo al distrito
+    print("   Recortando pendientes al distrito...")
     
-    print("   Dibujando clases de pendiente...")
+    # Crear array de máscara binaria
+    from rasterio.features import geometry_mask
     
-    # Crear colormap para las clases
+    # Reproyectar distrito al CRS del raster
+    gdf_distrito_raster_crs = gdf_distrito.to_crs(src_crs)
+    
+    # Crear máscara (True = dentro del distrito, False = fuera)
+    mask = geometry_mask(
+        gdf_distrito_raster_crs.geometry,
+        out_shape=raster_data.shape,
+        transform=out_transform,
+        invert=True
+    )
+    
+    # Aplicar máscara al raster
+    raster_masked = np.where(mask, raster_data, np.nan)
+    
+    # Visualizar raster RECORTADO al distrito
+    extent = [bbox_main[0], bbox_main[2], bbox_main[1], bbox_main[3]]
     cmap = colors.ListedColormap(COLORES_PENDIENTE)
-    bounds = [0.5, 1.5, 2.5, 3.5, 4.5, 5.5]
-    norm = BoundaryNorm(bounds, cmap.N)
-    
-    # Dibujar cada clase de pendiente
-    for clase in range(1, 6):
-        gdf_clase = gdf_pendientes[gdf_pendientes['clase_pendiente'] == clase]
-        if not gdf_clase.empty:
-            gdf_clase.plot(ax=ax_main, color=COLORES_PENDIENTE[clase-1], 
-                          edgecolor='none', alpha=0.7, zorder=4)
-    
+    norm = BoundaryNorm([0.5, 1.5, 2.5, 3.5, 4.5, 5.5], cmap.N)
+
+    ax_main.imshow(raster_masked, extent=extent, cmap=cmap, norm=norm, 
+                  aspect='auto', alpha=0.7, zorder=4, origin='upper')
+
     # Límite distrital
-    gdf_distrito.plot(ax=ax_main, facecolor="none", edgecolor="red", linewidth=2,
-                     linestyle='--', alpha=0.9, zorder=15)
-    
+    gdf_distrito.to_crs(3857).plot(ax=ax_main, facecolor="none", edgecolor="red", 
+                                   linewidth=2, linestyle='--', alpha=0.9, zorder=15)
+
     grillado_utm_proyectado(ax_main, bbox_main, ndiv=8)
     add_north_arrow_blanco_completo(ax_main, xy_pos=(0.93, 0.08), size=0.06)
     ax_main.add_artist(ScaleBar(1, units="m", location="lower left", 
                                 box_alpha=0.6, border_pad=0.5, scale_loc='bottom'))
-    
+
     # MEMBRETE Y LEYENDA
     gs_memb_ley = gs_izquierda[2].subgridspec(1, 2, wspace=0.1)
     ax_membrete = fig.add_subplot(gs_memb_ley[0])
     fig.canvas.draw()
     add_membrete(ax_membrete, departamento_sel, provincia_sel, distrito_sel, ax_main, fig)
-    
+
     ax_leyenda = fig.add_subplot(gs_memb_ley[1])
     ax_leyenda.axis('off')
-    
-    legend_elements = [
-        Patch(facecolor='white', edgecolor='white', label='PENDIENTES (°):', linewidth=0)
-    ]
-    
-    # Agregar colores de pendiente
+
+    legend_elements = [Patch(facecolor='white', edgecolor='white', label='PENDIENTES (°):', linewidth=0)]
     for idx, etiqueta in enumerate(ETIQUETAS_PENDIENTE):
-        legend_elements.append(
-            Patch(facecolor=COLORES_PENDIENTE[idx], edgecolor='black', label=etiqueta)
-        )
-    
+        legend_elements.append(Patch(facecolor=COLORES_PENDIENTE[idx], edgecolor='black', label=etiqueta))
+
     legend_elements.extend([
         Patch(facecolor='white', edgecolor='white', label='', linewidth=0),
         Line2D([0], [0], color='red', lw=2, linestyle='--', label='Límite Distrital'),
         Line2D([0], [0], color='black', ls='-', lw=1, label='Grillado UTM')
     ])
-    
-    leg = ax_leyenda.legend(
-        handles=legend_elements,
-        loc='center',
-        ncol=1,
-        frameon=True,
-        fontsize=8,
-        title="LEYENDA",
-        title_fontproperties={'size': 10, 'weight': 'bold'},
-        handletextpad=0.5,
-        columnspacing=1.0,
-        borderpad=0.7,
-        handlelength=1.5
-    )
-    
+
+    leg = ax_leyenda.legend(handles=legend_elements, loc='center', ncol=1, frameon=True, fontsize=8,
+                           title="LEYENDA", title_fontproperties={'size': 10, 'weight': 'bold'},
+                           handletextpad=0.5, columnspacing=1.0, borderpad=0.7, handlelength=1.5)
     leg.get_title().set_ha('center')
     leg.get_frame().set_edgecolor('black')
     leg.get_frame().set_linewidth(1.2)
-    
+
     print("   Generando mapas de ubicación...")
-    
     gs_ubicaciones = grid[0, 1].subgridspec(3, 1, height_ratios=[1, 1, 1], hspace=0.15)
     ax_depto = fig.add_subplot(gs_ubicaciones[0])
     ax_prov = fig.add_subplot(gs_ubicaciones[1])
     ax_dist = fig.add_subplot(gs_ubicaciones[2])
-    
+
     mapa_ubicacion(ax_depto, gdf_paises, gdf_departamentos, gdf_dpto_sel,
                    f"DEPARTAMENTO DE\n{departamento_sel.upper()}", departamento_sel,
                    tipo_mapa="pais", gdf_departamentos=gdf_departamentos, gdf_oceano=gdf_oceano)
-    
+
     mapa_ubicacion(ax_prov, gdf_departamentos, gdf_dpto_sel, gdf_prov_sel,
                    f"PROVINCIA DE\n{provincia_sel.upper()}", provincia_sel,
                    tipo_mapa="provincia", gdf_dpto_sel=gdf_dpto_sel, 
                    departamento_sel=departamento_sel, col_dpto=col_dpto, 
                    gdf_departamentos=gdf_departamentos, gdf_oceano=gdf_oceano)
-    
+
     mapa_ubicacion(ax_dist, gdf_prov_sel, gdf_distritos_en_provincia, gdf_distrito,
                    f"DISTRITO DE\n{distrito_sel.upper()}", distrito_sel,
                    tipo_mapa="distrito", gdf_prov_sel=gdf_prov_sel, 
                    provincia_sel=provincia_sel, col_prov=col_prov, 
                    gdf_provincias=gdf_provincias, gdf_oceano=gdf_oceano)
-    
+
     plt.subplots_adjust(top=0.98, bottom=0.02, left=0.02, right=0.98, hspace=0.2, wspace=0.05)
-    
+
     rect_frame = fig.add_axes([0, 0, 1, 1], frameon=False)
     rect_frame.set_xticks([])
     rect_frame.set_yticks([])
     rect_frame.patch.set_visible(False)
-    
+
     for spine in rect_frame.spines.values():
         spine.set_visible(True)
         spine.set_linewidth(2)
         spine.set_color('black')
-    
+
     print("\nGuardando mapa final en carpeta de usuario...")
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     nombre_base = f"MAPA_PENDIENTES_{distrito_sel.replace(' ', '_')}_{timestamp}.png"
     ruta_guardado_final = os.path.join(carpeta_salida, nombre_base)
-    
+
     try:
         plt.savefig(ruta_guardado_final, dpi=300, bbox_inches='tight', pad_inches=0.01)
         plt.close(fig)
-        
+
         if os.path.exists(ruta_guardado_final):
             file_size = os.path.getsize(ruta_guardado_final) / (1024 * 1024)
             print(f"Mapa de pendientes guardado exitosamente")
             print(f"   Ubicación: {ruta_guardado_final}")
             print(f"   Tamaño: {file_size:.2f} MB")
-            
-            # Mostrar distribución de clases
-            print(f"\nDISTRIBUCION DE PENDIENTES:")
-            print("=" * 65)
-            for clase in range(1, 6):
-                count = stats['clases'][clase]
-                porcentaje = (count / stats['total']) * 100 if stats['total'] > 0 else 0
-                print(f"   {ETIQUETAS_PENDIENTE[clase-1]:<15}: {count:>6} celdas ({porcentaje:>5.1f}%)")
-            print("=" * 65)
-            print(f"   {'TOTAL':<15}: {stats['total']:>6} celdas")
             print("="*80 + "\n")
-            
             return ruta_guardado_final
         else:
             print("El archivo no se guardó correctamente")
             return None
-            
+
     except Exception as e:
         print(f"Error al guardar el archivo: {e}")
         import traceback
         traceback.print_exc()
         plt.close(fig)
         return None
-
-
-# EJEMPLO DE USO
-if __name__ == "__main__":
-    # Ejemplo de llamada con archivo TIF
-    resultado = generar_mapa_pendientes(
-        nombre_usuario="FRT",
-        departamento_sel="CUSCO",
-        provincia_sel="ANTA",
-        distrito_sel="PUCYURA",
-        ruta_dem="/workspaces/SIG-AUTOMATIZACION/PRUEBA/DATA/PENDIENTES/DEM.tif"
-    )
-    
-    if resultado:
-        print(f"\nProceso completado exitosamente")
-        print(f"Archivo generado: {resultado}")
-    else:
-        print("\nHubo un error en la generación del mapa")
