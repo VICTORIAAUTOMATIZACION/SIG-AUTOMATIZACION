@@ -1,4 +1,4 @@
-# Archivo: app.py
+# Archivo: app.py - VERSIÓN CON LOGO PERSONALIZADO Y TEMA VERDE
 
 from dash import Dash, html, dcc, Input, Output, State
 import dash_bootstrap_components as dbc
@@ -11,9 +11,320 @@ from geomorfologia_final import generar_mapa_geomorfologia
 from climatica_final import generar_mapa_climatica
 from poblacion_final import generar_mapa_poblacion
 from vias_final import generar_mapa_vias
-from pendientes_final import generar_mapa_pendientes  # → IMPORTACIÓN ACTUALIZADA
+from pendientes_final import generar_mapa_pendientes
 
-app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
+# ==================== CONFIGURACIÓN DE LA APP ====================
+app = Dash(
+    __name__, 
+    external_stylesheets=[
+        dbc.themes.BOOTSTRAP,
+        dbc.icons.BOOTSTRAP,
+        "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    ], 
+    suppress_callback_exceptions=True
+)
+
+# Inyectar CSS con tema verde y animaciones
+app.index_string = '''
+<!DOCTYPE html>
+<html>
+    <head>
+        {%metas%}
+        <title>{%title%}</title>
+        {%favicon%}
+        {%css%}
+        <style>
+            /* Variables de color */
+            :root {
+                --escuela-verde-claro: #8BC34A;
+                --escuela-verde: #7CB342;
+                --escuela-verde-oscuro: #558B2F;
+                --escuela-verde-profundo: #33691E;
+            }
+            
+            /* Fuente moderna */
+            * {
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            }
+            
+            /* Fondo con gradiente verde */
+            body {
+                background: linear-gradient(135deg, #8BC34A 0%, #558B2F 50%, #33691E 100%) !important;
+                min-height: 100vh;
+            }
+            
+            /* Cards con efecto glassmorphism */
+            .card {
+                backdrop-filter: blur(10px);
+                background: rgba(255, 255, 255, 0.97) !important;
+                border: 1px solid rgba(255, 255, 255, 0.4) !important;
+                box-shadow: 0 10px 40px rgba(51, 105, 30, 0.2) !important;
+                transition: transform 0.3s ease, box-shadow 0.3s ease;
+                border-radius: 16px !important;
+            }
+            
+            .card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 15px 50px rgba(51, 105, 30, 0.3) !important;
+            }
+            
+            /* Inputs modernos con acento verde */
+            .form-control, .form-select {
+                border: 2px solid #C5E1A5 !important;
+                border-radius: 12px !important;
+                padding: 12px 16px !important;
+                transition: all 0.3s ease;
+                background: #FAFAFA !important;
+            }
+            
+            .form-control:focus, .form-select:focus {
+                border-color: #7CB342 !important;
+                box-shadow: 0 0 0 3px rgba(124, 179, 66, 0.15) !important;
+                transform: translateY(-2px);
+                background: white !important;
+            }
+            
+            /* Botón Generar Mapa - Verde */
+            .btn-success {
+                background: linear-gradient(135deg, #8BC34A 0%, #7CB342 100%) !important;
+                border: none !important;
+                border-radius: 12px !important;
+                padding: 14px 28px !important;
+                font-weight: 700 !important;
+                letter-spacing: 0.5px !important;
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 20px rgba(139, 195, 74, 0.4) !important;
+                color: white !important;
+            }
+            
+            .btn-success:hover:not(:disabled) {
+                background: linear-gradient(135deg, #7CB342 0%, #689F38 100%) !important;
+                transform: translateY(-3px);
+                box-shadow: 0 6px 30px rgba(139, 195, 74, 0.5) !important;
+            }
+            
+            .btn-success:disabled {
+                background: linear-gradient(135deg, #C5E1A5 0%, #AED581 100%) !important;
+                opacity: 0.6;
+            }
+            
+            /* Botón Descargar Mapa - Verde Oscuro */
+            .btn-info {
+                background: linear-gradient(135deg, #558B2F 0%, #33691E 100%) !important;
+                border: none !important;
+                border-radius: 12px !important;
+                padding: 14px 28px !important;
+                font-weight: 700 !important;
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 20px rgba(85, 139, 47, 0.4) !important;
+                color: white !important;
+            }
+            
+            .btn-info:hover:not(:disabled) {
+                background: linear-gradient(135deg, #33691E 0%, #1B5E20 100%) !important;
+                transform: translateY(-3px);
+                box-shadow: 0 6px 30px rgba(85, 139, 47, 0.5) !important;
+            }
+            
+            .btn-info:disabled {
+                background: linear-gradient(135deg, #9CCC65 0%, #8BC34A 100%) !important;
+                opacity: 0.6;
+            }
+            
+            /* Botón Descargar Recursos - Verde Medio */
+            .btn-recursos {
+                background: linear-gradient(135deg, #689F38 0%, #558B2F 100%) !important;
+                border: none !important;
+                border-radius: 12px !important;
+                padding: 14px 28px !important;
+                font-weight: 700 !important;
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 20px rgba(104, 159, 56, 0.4) !important;
+                color: white !important;
+            }
+            
+            .btn-recursos:hover {
+                background: linear-gradient(135deg, #558B2F 0%, #33691E 100%) !important;
+                transform: translateY(-3px);
+                box-shadow: 0 6px 30px rgba(104, 159, 56, 0.5) !important;
+            }
+            
+            /* Botón Logout */
+            .btn-danger {
+                background: linear-gradient(135deg, #EF5350 0%, #E53935 100%) !important;
+                border: none !important;
+                border-radius: 8px !important;
+                transition: all 0.3s ease;
+                font-weight: 600 !important;
+            }
+            
+            /* Navbar premium */
+            .navbar {
+                backdrop-filter: blur(10px);
+                background: rgba(255, 255, 255, 0.15) !important;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+                box-shadow: 0 4px 20px rgba(51, 105, 30, 0.15);
+            }
+            
+            .navbar-brand {
+                font-weight: 800 !important;
+                font-size: 1.3rem !important;
+                letter-spacing: 0.5px !important;
+                display: flex !important;
+                align-items: center !important;
+            }
+            
+            /* Labels con estilo verde */
+            label {
+                color: #33691E;
+                font-weight: 700;
+                font-size: 0.8rem;
+                text-transform: uppercase;
+                letter-spacing: 0.8px;
+                margin-bottom: 8px;
+            }
+            
+            /* Alertas modernas */
+            .alert {
+                border-radius: 16px !important;
+                border: none !important;
+                padding: 24px !important;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08) !important;
+            }
+            
+            .alert-success {
+                background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%) !important;
+                border-left: 5px solid #7CB342 !important;
+                color: #1B5E20 !important;
+            }
+            
+            /* Hr decorativo */
+            hr {
+                border-top: 2px solid #C5E1A5 !important;
+                opacity: 0.8;
+                margin: 24px 0 !important;
+            }
+            
+            /* Resumen de selección */
+            .selection-summary {
+                background: linear-gradient(135deg, #F1F8E9 0%, #DCEDC8 100%);
+                padding: 20px;
+                border-radius: 12px;
+                border-left: 5px solid #7CB342;
+            }
+            
+            /* Login container */
+            .login-container {
+                backdrop-filter: blur(10px);
+                background: rgba(255, 255, 255, 0.98);
+                border-radius: 20px;
+                padding: 50px;
+                box-shadow: 0 25px 70px rgba(51, 105, 30, 0.3);
+                border: 2px solid rgba(139, 195, 74, 0.2);
+            }
+            
+            /* Animación de rotación para el logo */
+            @keyframes logoRotation {
+                from { transform: rotateY(0deg); }
+                to { transform: rotateY(360deg); }
+            }
+            
+            .logo-rotation {
+                animation: logoRotation 4s linear infinite;
+                filter: drop-shadow(0 4px 10px rgba(139, 195, 74, 0.3));
+            }
+            
+            .logo-rotation:hover {
+                animation-duration: 1.5s;
+            }
+            
+            /* Animaciones */
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(30px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            
+            @keyframes pulse {
+                0%, 100% { transform: scale(1); }
+                50% { transform: scale(1.05); }
+            }
+            
+            .animated {
+                animation: fadeIn 0.7s ease-out;
+            }
+            
+            .pulse-animation {
+                animation: pulse 2s infinite;
+            }
+            
+            /* Scrollbar personalizado verde */
+            ::-webkit-scrollbar {
+                width: 12px;
+            }
+            
+            ::-webkit-scrollbar-track {
+                background: #F1F8E9;
+            }
+            
+            ::-webkit-scrollbar-thumb {
+                background: linear-gradient(135deg, #8BC34A 0%, #558B2F 100%);
+                border-radius: 6px;
+            }
+            
+            ::-webkit-scrollbar-thumb:hover {
+                background: linear-gradient(135deg, #7CB342 0%, #33691E 100%);
+            }
+            
+            /* Icono de éxito verde */
+            .success-icon {
+                color: #7CB342;
+            }
+            
+            /* Panel de control header */
+            .panel-header {
+                background: linear-gradient(135deg, #8BC34A 0%, #7CB342 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+            }
+            
+            /* Dropdown mejorado */
+            .Select-control {
+                border-radius: 12px !important;
+            }
+            
+            /* Espacio para logo en resultado */
+            .result-panel {
+                position: relative;
+            }
+            
+            .download-section {
+                background: linear-gradient(135deg, #F1F8E9 0%, #DCEDC8 100%);
+                padding: 20px;
+                border-radius: 12px;
+                border: 2px dashed #8BC34A;
+                margin-top: 15px;
+            }
+            
+            /* Logo en navbar */
+            .navbar-logo {
+                height: 40px;
+                margin-right: 15px;
+                filter: brightness(0) invert(1);
+            }
+        </style>
+    </head>
+    <body>
+        {%app_entry%}
+        <footer>
+            {%config%}
+            {%scripts%}
+            {%renderer%}
+        </footer>
+    </body>
+</html>
+'''
+
 VALID_USERS = {'admin': 'admin', 'usuario': 'admin'}
 
 def leer_sql(ruta):
@@ -26,6 +337,7 @@ def leer_sql(ruta):
     matches = re.findall(patron, contenido)
     return [[v.strip().strip("'") for v in match.split(',')] for match in matches]
 
+# Carga de datos SQL
 try:
     ruta_departamentos = '/workspaces/SIG-AUTOMATIZACION/PRUEBA/DASHBOARDS/departamentos.sql'
     ruta_provincias = '/workspaces/SIG-AUTOMATIZACION/PRUEBA/DASHBOARDS/provincias.sql'
@@ -49,89 +361,398 @@ except Exception as e:
     print(f"❌ Error crítico al cargar datos SQL: {e}. Usando datos de respaldo.")
     LISTA_DEPARTAMENTOS, PROVINCIAS_POR_DEPA, DISTRITOS_POR_PROV = ['LIMA'], {'LIMA': ['LIMA']}, {'LIMA': ['MIRAFLORES']}
 
-login_layout = dbc.Container([dbc.Row(dbc.Col(html.Div([html.H2("🔐 Iniciar Sesión", className="text-center mb-4"), dbc.Card(dbc.CardBody([dbc.Input(id='username-input', placeholder='Usuario', type='text', className='mb-3'), dbc.Input(id='password-input', placeholder='Contraseña', type='password', className='mb-3'), dbc.Button('Ingresar', id='login-button', color='primary', className='w-100'), html.Div(id='login-alert', className='mt-3')]), className='shadow')], style={'marginTop': '100px', 'maxWidth': '400px', 'margin': '100px auto'})))], fluid=True)
+# ==================== LAYOUT DE LOGIN ====================
+login_layout = dbc.Container([
+    dbc.Row(
+        dbc.Col(
+            html.Div([
+                # Logo con animación de rotación
+                html.Div([
+                    html.Img(
+                        src='/assets/LOGO.png',
+                        className='logo-rotation',
+                        style={
+                            'width': '150px',
+                            'height': 'auto',
+                            'marginBottom': '20px'
+                        }
+                    )
+                ], className='text-center'),
+                
+                html.H2("Sistema de Mapas Geográficos", 
+                       className="text-center mb-4",
+                       style={
+                           'color': '#33691E', 
+                           'fontWeight': '800',
+                           'fontSize': '1.8rem',
+                           'letterSpacing': '0.5px'
+                       }),
+                
+                dbc.Card([
+                    dbc.CardBody([
+                        # Usuario
+                        html.Div([
+                            html.Label([
+                                html.I(className="bi bi-person-fill me-2"),
+                                "Usuario"
+                            ], style={'color': '#33691E', 'fontWeight': '700'}),
+                            dbc.Input(
+                                id='username-input',
+                                placeholder='Ingrese su usuario',
+                                type='text',
+                                className='mb-3'
+                            )
+                        ]),
+                        
+                        # Contraseña
+                        html.Div([
+                            html.Label([
+                                html.I(className="bi bi-lock-fill me-2"),
+                                "Contraseña"
+                            ], style={'color': '#33691E', 'fontWeight': '700'}),
+                            dbc.Input(
+                                id='password-input',
+                                placeholder='Ingrese su contraseña',
+                                type='password',
+                                className='mb-4'
+                            )
+                        ]),
+                        
+                        # Botón de login
+                        dbc.Button([
+                            html.I(className="bi bi-box-arrow-in-right me-2"),
+                            'Iniciar Sesión'
+                        ], 
+                        id='login-button',
+                        color='success',
+                        className='w-100 btn-success',
+                        style={'padding': '14px', 'fontSize': '1.1rem'}),
+                        
+                        # Alerta
+                        html.Div(id='login-alert', className='mt-3')
+                    ])
+                ], className='shadow-lg border-0 login-container')
+            ], 
+            className='animated',
+            style={
+                'marginTop': '80px',
+                'maxWidth': '480px',
+                'margin': '80px auto'
+            }),
+            width=12
+        ),
+        justify='center'
+    )
+], fluid=True)
 
+# ==================== LAYOUT DEL DASHBOARD ====================
 dashboard_layout = dbc.Container([
     dcc.Download(id="download-map-image"),
     dcc.Store(id='map-filepath-store', storage_type='memory'),
-    dbc.NavbarSimple(children=[dbc.NavItem(html.Span(id='user-display-nav', className='navbar-text me-3 text-white')), dbc.NavItem(dbc.Button("Cerrar Sesión", id='logout-button', color='danger', size='sm'))], brand="🗺️ Panel de Control de Mapas - Perú", color="primary", dark=True, className='mb-4'), 
+    
+    # Navbar premium
+    dbc.NavbarSimple(
+        children=[
+            dbc.NavItem(
+                html.Span(
+                    id='user-display-nav',
+                    className='navbar-text me-3',
+                    style={'color': 'white', 'fontWeight': '600', 'fontSize': '1rem'}
+                )
+            ),
+            dbc.NavItem(
+                dbc.Button([
+                    html.I(className="bi bi-box-arrow-right me-2"),
+                    "Cerrar Sesión"
+                ], 
+                id='logout-button',
+                color='danger',
+                size='sm',
+                className='btn-danger')
+            )
+        ],
+        brand=[
+            html.Img(
+                src='/assets/LOGO.png',
+                className='navbar-logo'
+            ),
+            "Sistema de Mapas Geográficos"
+        ],
+        color="primary",
+        dark=True,
+        className='mb-4 shadow-sm',
+        style={'fontSize': '1.2rem'}
+    ),
+    
     dbc.Row([
-        dbc.Col(dbc.Card(dbc.CardBody([
-            dbc.Row([
-                dbc.Col([
-                    html.Label("NOMBRE DE USUARIO", className='fw-bold mb-2'), 
-                    dbc.Input(id='user-name-input', type='text', className='mb-4'), 
-                    html.Label("TIPO DE MAPA", className='fw-bold mb-2'), 
-                    dcc.Dropdown(
-                        id='map-type', 
-                        options=[
-                            {'label': '🗺️ Mapa de Ubicación Geográfica', 'value': 'geografico'},
-                            {'label': '🌄 Mapa de Geomorfología', 'value': 'geomorfologia'},
-                            {'label': '🌡️ Mapa de Clasificación Climática', 'value': 'climatica'},
-                            {'label': '📐 Mapa de Pendientes', 'value': 'pendientes'},
-                            {'label': '🛣️ Mapa de Vías', 'value': 'vias'},
-                            {'label': '🏘️ Mapa de Centros Poblados', 'value': 'centros'}
-                        ], 
-                        placeholder='Seleccione tipo de mapa', 
-                        className='mb-4'
-                    )
-                ], md=6), 
-                dbc.Col([
-                    html.Label("DEPARTAMENTO", className='fw-bold mb-2'), 
-                    dcc.Dropdown(id='departamento-dropdown', options=LISTA_DEPARTAMENTOS, placeholder='Seleccione', className='mb-4'), 
-                    html.Label("PROVINCIA", className='fw-bold mb-2'), 
-                    dcc.Dropdown(id='provincia-dropdown', placeholder='Primero elija Dpto.', disabled=True, className='mb-4'), 
-                    html.Label("DISTRITO", className='fw-bold mb-2'), 
-                    dcc.Dropdown(id='distrito-dropdown', placeholder='Primero elija Prov.', disabled=True, className='mb-4')
-                ], md=6)
-            ]), 
-            html.Hr(), 
-            html.H5("📋 Resumen de Selección:", className='mb-3'), 
-            html.Div(id='selection-summary', children=[dbc.Alert("Complete el formulario para ver el resumen.", color="light")]), 
-            html.Hr(), 
-            dbc.Row([
-                dbc.Col(dbc.Button('🚀 Generar y Guardar Mapa', id='generate-map-button', color='success', size='lg', className='w-100', disabled=True), md=6), 
-                dbc.Col(dbc.Button('💾 Descargar Mapa Generado', id='download-button', color='info', size='lg', className='w-100', disabled=True), md=6)
-            ])
-        ])), md=5), 
-        dbc.Col(dbc.Card(dbc.CardBody(id='map-container', children=[dbc.Alert([html.H4("Estado de Generación", className="alert-heading"), html.P("El resultado del proceso aparecerá aquí.")], color="info")], className="h-100"), className="h-100"), md=7)
-    ])
+        # Panel de control izquierdo
+        dbc.Col([
+            dbc.Card([
+                dbc.CardBody([
+                    # Título de sección
+                    html.Div([
+                        html.I(className="bi bi-sliders me-2", style={'fontSize': '1.8rem', 'color': '#7CB342'}),
+                        html.H4("Panel de Control", className='panel-header', style={'display': 'inline', 'fontWeight': '800'})
+                    ], className='mb-4'),
+                    
+                    dbc.Row([
+                        dbc.Col([
+                            # Usuario
+                            html.Div([
+                                html.Label([
+                                    html.I(className="bi bi-person-badge me-2"),
+                                    "Nombre de Usuario"
+                                ]),
+                                dbc.Input(
+                                    id='user-name-input',
+                                    type='text',
+                                    placeholder='Ej: Juan Pérez',
+                                    className='mb-4'
+                                )
+                            ]),
+                            
+                            # Tipo de mapa
+                            html.Div([
+                                html.Label([
+                                    html.I(className="bi bi-map me-2"),
+                                    "Tipo de Mapa"
+                                ]),
+                                dcc.Dropdown(
+                                    id='map-type',
+                                    options=[
+                                        {'label': '🗺️ Ubicación Geográfica', 'value': 'geografico'},
+                                        {'label': '🌄 Geomorfología', 'value': 'geomorfologia'},
+                                        {'label': '🌡️ Clasificación Climática', 'value': 'climatica'},
+                                        {'label': '📐 Pendientes', 'value': 'pendientes'},
+                                        {'label': '🛣️ Vías', 'value': 'vias'},
+                                        {'label': '🏘️ Centros Poblados', 'value': 'centros'}
+                                    ],
+                                    placeholder='Seleccione el tipo de mapa',
+                                    className='mb-4'
+                                )
+                            ])
+                        ], md=12)
+                    ]),
+                    
+                    # Separador decorativo
+                    html.Hr(style={'borderTop': '2px dashed #C5E1A5', 'margin': '20px 0'}),
+                    
+                    dbc.Row([
+                        dbc.Col([
+                            # Departamento
+                            html.Div([
+                                html.Label([
+                                    html.I(className="bi bi-geo-alt me-2"),
+                                    "Departamento"
+                                ]),
+                                dcc.Dropdown(
+                                    id='departamento-dropdown',
+                                    options=LISTA_DEPARTAMENTOS,
+                                    placeholder='Seleccione departamento',
+                                    className='mb-4'
+                                )
+                            ]),
+                            
+                            # Provincia
+                            html.Div([
+                                html.Label([
+                                    html.I(className="bi bi-building me-2"),
+                                    "Provincia"
+                                ]),
+                                dcc.Dropdown(
+                                    id='provincia-dropdown',
+                                    placeholder='Primero elija departamento',
+                                    disabled=True,
+                                    className='mb-4'
+                                )
+                            ]),
+                            
+                            # Distrito
+                            html.Div([
+                                html.Label([
+                                    html.I(className="bi bi-house me-2"),
+                                    "Distrito"
+                                ]),
+                                dcc.Dropdown(
+                                    id='distrito-dropdown',
+                                    placeholder='Primero elija provincia',
+                                    disabled=True,
+                                    className='mb-4'
+                                )
+                            ])
+                        ], md=12)
+                    ]),
+                    
+                    html.Hr(),
+                    
+                    # Resumen de selección
+                    html.Div([
+                        html.H5([
+                            html.I(className="bi bi-clipboard-check me-2", style={'color': '#7CB342'}),
+                            "Resumen de Selección"
+                        ], className='mb-3', style={'color': '#33691E', 'fontWeight': '800'}),
+                        html.Div(
+                            id='selection-summary',
+                            children=[
+                                dbc.Alert([
+                                    html.I(className="bi bi-info-circle me-2"),
+                                    "Complete todos los campos para continuar"
+                                ], color="light", className='mb-0')
+                            ],
+                            className='selection-summary'
+                        )
+                    ]),
+                    
+                    html.Hr(),
+                    
+                    # Botones de acción
+                    dbc.Row([
+                        dbc.Col([
+                            dbc.Button([
+                                html.I(className="bi bi-rocket-takeoff me-2"),
+                                'Generar Mapa'
+                            ],
+                            id='generate-map-button',
+                            color='success',
+                            size='lg',
+                            className='w-100 mb-3',
+                            disabled=True)
+                        ], md=12),
+                        dbc.Col([
+                            dbc.Button([
+                                html.I(className="bi bi-download me-2"),
+                                'Descargar Mapa'
+                            ],
+                            id='download-button',
+                            color='info',
+                            size='lg',
+                            className='w-100 mb-3',
+                            disabled=True)
+                        ], md=12),
+                        dbc.Col([
+                            dbc.Button([
+                                html.I(className="bi bi-folder-symlink me-2"),
+                                'Descargar Recursos'
+                            ],
+                            id='download-recursos-button',
+                            className='w-100 btn-recursos',
+                            size='lg')
+                        ], md=12)
+                    ])
+                ])
+            ], className='shadow-lg border-0 animated')
+        ], md=5, lg=4),
+        
+        # Panel de resultados derecho
+        dbc.Col([
+            dbc.Card([
+                dbc.CardBody(
+                    id='map-container',
+                    children=[
+                        dbc.Alert([
+                            html.Div([
+                                html.I(className="bi bi-hourglass-split", style={'fontSize': '4rem', 'color': '#7CB342'}),
+                            ], className='text-center mb-3'),
+                            html.H4("Esperando Generación", className="alert-heading text-center", style={'color': '#33691E', 'fontWeight': '700'}),
+                            html.P("Configure los parámetros en el panel izquierdo y haga clic en 'Generar Mapa' para comenzar.", 
+                                  className='text-center mb-0', style={'color': '#558B2F'})
+                        ], color="light", className='border-0', style={'background': 'linear-gradient(135deg, #F1F8E9 0%, #DCEDC8 100%)'})
+                    ],
+                    className="h-100 result-panel"
+                )
+            ], className="h-100 shadow-lg border-0 animated")
+        ], md=7, lg=8)
+    ], className='g-4')
 ], fluid=True, className="p-4")
 
-app.layout = html.Div([dcc.Location(id='url', refresh=False), dcc.Store(id='session-store', storage_type='session'), html.Div(id='page-content')])
+app.layout = html.Div([
+    dcc.Location(id='url', refresh=False),
+    dcc.Store(id='session-store', storage_type='session'),
+    html.Div(id='page-content')
+])
 
-# CALLBACKS
+# ==================== CALLBACKS ====================
 @app.callback(Output('page-content', 'children'), Input('session-store', 'data'))
-def display_page(session_data): return dashboard_layout if session_data and session_data.get('logged_in') else login_layout
+def display_page(session_data): 
+    return dashboard_layout if session_data and session_data.get('logged_in') else login_layout
 
-@app.callback(Output('session-store', 'data'), Output('login-alert', 'children'), Input('login-button', 'n_clicks'), State('username-input', 'value'), State('password-input', 'value'), prevent_initial_call=True)
+@app.callback(
+    Output('session-store', 'data'), 
+    Output('login-alert', 'children'), 
+    Input('login-button', 'n_clicks'), 
+    State('username-input', 'value'), 
+    State('password-input', 'value'), 
+    prevent_initial_call=True
+)
 def login_user(n_clicks, username, password):
-    if not username or not password: return {'logged_in': False}, dbc.Alert("⚠️ Ingrese usuario y contraseña.", color="warning")
-    if username in VALID_USERS and VALID_USERS[username] == password: return {'logged_in': True, 'username': username}, None
-    return {'logged_in': False}, dbc.Alert("❌ Datos incorrectos.", color="danger")
+    if not username or not password: 
+        return {'logged_in': False}, dbc.Alert([
+            html.I(className="bi bi-exclamation-triangle me-2"),
+            "Por favor, complete todos los campos"
+        ], color="warning")
+    if username in VALID_USERS and VALID_USERS[username] == password: 
+        return {'logged_in': True, 'username': username}, None
+    return {'logged_in': False}, dbc.Alert([
+        html.I(className="bi bi-x-circle me-2"),
+        "Usuario o contraseña incorrectos"
+    ], color="danger")
 
-@app.callback(Output('session-store', 'data', allow_duplicate=True), Input('logout-button', 'n_clicks'), prevent_initial_call=True)
-def logout_user(n_clicks): return {'logged_in': False}
+@app.callback(
+    Output('session-store', 'data', allow_duplicate=True), 
+    Input('logout-button', 'n_clicks'), 
+    prevent_initial_call=True
+)
+def logout_user(n_clicks): 
+    return {'logged_in': False}
 
 @app.callback(Output('user-display-nav', 'children'), Input('session-store', 'data'))
-def display_user_nav(session_data): return f"👤 {session_data.get('username', 'Usuario')}" if session_data and session_data.get('logged_in') else None
+def display_user_nav(session_data): 
+    return [
+        html.I(className="bi bi-person-circle me-2"),
+        session_data.get('username', 'Usuario')
+    ] if session_data and session_data.get('logged_in') else None
 
-@app.callback(Output('provincia-dropdown', 'options'), Output('provincia-dropdown', 'disabled'), Output('provincia-dropdown', 'value'), Input('departamento-dropdown', 'value'))
+@app.callback(
+    Output('provincia-dropdown', 'options'), 
+    Output('provincia-dropdown', 'disabled'), 
+    Output('provincia-dropdown', 'value'), 
+    Input('departamento-dropdown', 'value')
+)
 def update_provincias(departamento):
-    if departamento: return [{'label': prov, 'value': prov} for prov in sorted(PROVINCIAS_POR_DEPA.get(departamento, []))], False, None
+    if departamento: 
+        return [{'label': prov, 'value': prov} for prov in sorted(PROVINCIAS_POR_DEPA.get(departamento, []))], False, None
     return [], True, None
 
-@app.callback(Output('distrito-dropdown', 'options'), Output('distrito-dropdown', 'disabled'), Output('distrito-dropdown', 'value'), Input('provincia-dropdown', 'value'))
+@app.callback(
+    Output('distrito-dropdown', 'options'), 
+    Output('distrito-dropdown', 'disabled'), 
+    Output('distrito-dropdown', 'value'), 
+    Input('provincia-dropdown', 'value')
+)
 def update_distritos(provincia):
-    if provincia: return [{'label': dist, 'value': dist} for dist in sorted(DISTRITOS_POR_PROV.get(provincia, []))], False, None
+    if provincia: 
+        return [{'label': dist, 'value': dist} for dist in sorted(DISTRITOS_POR_PROV.get(provincia, []))], False, None
     return [], True, None
 
-@app.callback(Output('generate-map-button', 'disabled'), Output('download-button', 'disabled'), [Input(c, 'value') for c in ['user-name-input', 'map-type', 'departamento-dropdown', 'provincia-dropdown', 'distrito-dropdown']])
-def enable_buttons(*values): return not all(values), not all(values)
+@app.callback(
+    Output('generate-map-button', 'disabled'), 
+    Output('download-button', 'disabled'), 
+    [Input(c, 'value') for c in ['user-name-input', 'map-type', 'departamento-dropdown', 'provincia-dropdown', 'distrito-dropdown']]
+)
+def enable_buttons(*values): 
+    return not all(values), not all(values)
 
-@app.callback(Output('selection-summary', 'children'), [Input(c, 'value') for c in ['user-name-input', 'map-type', 'departamento-dropdown', 'provincia-dropdown', 'distrito-dropdown']])
+@app.callback(
+    Output('selection-summary', 'children'), 
+    [Input(c, 'value') for c in ['user-name-input', 'map-type', 'departamento-dropdown', 'provincia-dropdown', 'distrito-dropdown']]
+)
 def update_summary(user_name, map_type, departamento, provincia, distrito):
-    if not any([user_name, map_type, departamento, provincia, distrito]): return dbc.Alert("Complete el formulario.", color="light")
+    if not any([user_name, map_type, departamento, provincia, distrito]): 
+        return dbc.Alert([
+            html.I(className="bi bi-info-circle me-2"),
+            "Complete todos los campos para continuar"
+        ], color="light", className='mb-0')
+    
     map_types_dict = {
         'geografico': 'Ubicación Geográfica',
         'geomorfologia': 'Geomorfología',
@@ -140,15 +761,37 @@ def update_summary(user_name, map_type, departamento, provincia, distrito):
         'vias': 'Vías',
         'centros': 'Centros Poblados'
     }
+    
     summary_items = []
-    if user_name: summary_items.append(html.Li(f"👤 Usuario: {user_name}"))
-    if map_type: summary_items.append(html.Li(f"🗺️ Tipo: {map_types_dict.get(map_type, '')}"))
-    if departamento: summary_items.append(html.Li(f"📍 Dpto: {departamento}"))
-    if provincia: summary_items.append(html.Li(f"🏙️ Prov: {provincia}"))
-    if distrito: summary_items.append(html.Li(f"🏘️ Dist: {distrito}"))
-    return html.Ul(summary_items, className='list-unstyled')
+    if user_name: summary_items.append(html.Div([
+        html.I(className="bi bi-person-fill me-2", style={'color': '#7CB342'}),
+        html.Strong("Usuario: "),
+        user_name
+    ], className='mb-2'))
+    if map_type: summary_items.append(html.Div([
+        html.I(className="bi bi-map-fill me-2", style={'color': '#7CB342'}),
+        html.Strong("Tipo: "),
+        map_types_dict.get(map_type, '')
+    ], className='mb-2'))
+    if departamento: summary_items.append(html.Div([
+        html.I(className="bi bi-geo-alt-fill me-2", style={'color': '#7CB342'}),
+        html.Strong("Departamento: "),
+        departamento
+    ], className='mb-2'))
+    if provincia: summary_items.append(html.Div([
+        html.I(className="bi bi-building me-2", style={'color': '#7CB342'}),
+        html.Strong("Provincia: "),
+        provincia
+    ], className='mb-2'))
+    if distrito: summary_items.append(html.Div([
+        html.I(className="bi bi-house-fill me-2", style={'color': '#7CB342'}),
+        html.Strong("Distrito: "),
+        distrito
+    ], className='mb-2'))
+    
+    return html.Div(summary_items)
 
-# CALLBACK DE GENERACIÓN - ACTUALIZADO PARA PENDIENTES CLASIFICADAS
+# Callback de generación
 @app.callback(
     Output('map-container', 'children'),
     Output('map-filepath-store', 'data'),
@@ -164,98 +807,100 @@ def generate_and_save_map_callback(n_clicks, user_name, map_type, departamento, 
     ruta_guardado = None
     
     try:
-        # LÓGICA SEGÚN EL TIPO DE MAPA SELECCIONADO
         if map_type == 'geografico':
             print(f"\n🗺️ Generando mapa geográfico para {distrito}...")
             ruta_guardado = generar_mapa_final(user_name, departamento, provincia, distrito)
-        
         elif map_type == 'geomorfologia':
             print(f"\n🌄 Generando mapa de geomorfología para {distrito}...")
             ruta_guardado = generar_mapa_geomorfologia(user_name, departamento, provincia, distrito)
-        
         elif map_type == 'climatica':
             print(f"\n🌡️ Generando mapa climático para {distrito}...")
             ruta_guardado = generar_mapa_climatica(user_name, departamento, provincia, distrito)
-        
-        elif map_type == 'pendientes':  # → LÓGICA SIMPLIFICADA
+        elif map_type == 'pendientes':
             print(f"\n📐 Generando mapa de pendientes para {distrito}...")
-            
-            # Verificar que el archivo de pendientes clasificadas existe
             ruta_pendientes = "/workspaces/SIG-AUTOMATIZACION/PRUEBA/DATA/PENDIENTES/pendientes.tif"
-            
             if not os.path.exists(ruta_pendientes):
-                print(f"❌ ERROR: No se encontró archivo de pendientes en:")
-                print(f"   {ruta_pendientes}")
                 raise FileNotFoundError(f"Archivo de pendientes no encontrado: {ruta_pendientes}")
-            
-            print(f"✅ Archivo de pendientes encontrado: {ruta_pendientes}")
-            print(f"📊 Tamaño: {os.path.getsize(ruta_pendientes) / (1024*1024):.2f} MB")
-            
-            # Llamar a la función sin parámetro de ruta DEM
             ruta_guardado = generar_mapa_pendientes(user_name, departamento, provincia, distrito)
-        
         elif map_type == 'vias':
             print(f"\n🛣️ Generando mapa de vías para {distrito}...")
             ruta_guardado = generar_mapa_vias(user_name, departamento, provincia, distrito)
-        
         elif map_type == 'centros':
             print(f"\n🏘️ Generando mapa de centros poblados para {distrito}...")
             ruta_guardado = generar_mapa_poblacion(user_name, departamento, provincia, distrito)
         
-        # RESULTADO FINAL - VALIDACIÓN MEJORADA
         if ruta_guardado and os.path.exists(ruta_guardado):
-            print(f"✅ Mapa generado exitosamente en: {ruta_guardado}")
-            
-            # Calcular tamaño del archivo
             file_size_mb = os.path.getsize(ruta_guardado) / (1024 * 1024)
             
-            success_alert = dbc.Alert(
-                [
-                    html.H4("✅ ¡Éxito!", className="alert-heading"),
-                    html.P("El mapa se ha generado y guardado correctamente."),
-                    html.Hr(),
-                    html.P("📂 Archivo guardado:", className="mb-1 fw-bold"),
-                    html.Code(os.path.basename(ruta_guardado), style={'fontSize': '0.9em'}),
-                    html.P(f"📊 Tamaño: {file_size_mb:.2f} MB", className="mb-1 text-muted"),
-                    html.Hr(),
-                    html.P("💡 Haz clic en 'Descargar Mapa Generado' para obtener el archivo.", className="mb-0")
-                ],
-                color="success"
-            )
+            success_alert = html.Div([
+                dbc.Alert([
+                    html.Div([
+                        html.I(className="bi bi-check-circle-fill success-icon", style={'fontSize': '4rem'})
+                    ], className='text-center mb-3'),
+                    html.H4("¡Mapa Generado Exitosamente!", 
+                           className="alert-heading text-center",
+                           style={'color': '#33691E', 'fontWeight': '800'}),
+                    html.Hr(style={'borderColor': '#7CB342'}),
+                    html.Div([
+                        html.I(className="bi bi-file-earmark-image me-2", style={'color': '#558B2F'}),
+                        html.Strong("Archivo: ", style={'color': '#33691E'}),
+                        html.Code(os.path.basename(ruta_guardado), 
+                                 style={'fontSize': '0.9em', 'background': '#F1F8E9', 'padding': '4px 8px', 'borderRadius': '6px'})
+                    ], className='mb-2'),
+                    html.Div([
+                        html.I(className="bi bi-hdd me-2", style={'color': '#558B2F'}),
+                        html.Strong("Tamaño: ", style={'color': '#33691E'}),
+                        f"{file_size_mb:.2f} MB"
+                    ], className='mb-3'),
+                ], color="success", className='border-0 mb-3'),
+                
+                # Sección de descarga destacada
+                html.Div([
+                    html.H5([
+                        html.I(className="bi bi-arrow-down-circle-fill me-2", style={'color': '#7CB342'}),
+                        "Descargar Mapa"
+                    ], className='text-center mb-3', style={'color': '#33691E', 'fontWeight': '700'}),
+                    html.P("Haz clic en el botón 'Descargar Mapa' en el panel izquierdo para obtener el archivo.",
+                          className='text-center mb-0', style={'color': '#558B2F', 'fontSize': '0.95rem'})
+                ], className='download-section')
+            ])
+            
             return success_alert, ruta_guardado
         else:
-            print(f"❌ Error: No se pudo generar el mapa o el archivo no existe")
-            error_alert = dbc.Alert(
-                [
-                    html.H4("❌ Error al generar mapa", className="alert-heading"),
-                    html.P("No se pudo generar el mapa correctamente."),
-                    html.Hr(),
-                    html.P("Verifica:", className="mb-1 fw-bold"),
+            error_alert = dbc.Alert([
+                html.Div([
+                    html.I(className="bi bi-exclamation-triangle-fill", style={'fontSize': '3rem', 'color': '#EF6C00'})
+                ], className='text-center mb-3'),
+                html.H4("Error al Generar Mapa", className="alert-heading text-center", style={'fontWeight': '700'}),
+                html.Hr(),
+                html.P("No se pudo generar el mapa correctamente.", className='text-center'),
+                html.Div([
+                    html.Strong("Verifica:"),
                     html.Ul([
                         html.Li("Que los datos geográficos estén disponibles"),
                         html.Li("Que el distrito seleccionado sea correcto"),
-                        html.Li("Para pendientes: que exista pendientes.tif en /DATA/PENDIENTES/"),
+                        html.Li("Para pendientes: que exista pendientes.tif"),
                         html.Li("Los logs en la terminal para más detalles")
                     ])
-                ],
-                color="danger"
-            )
+                ], className='mt-3')
+            ], color="danger", className='border-0')
             return error_alert, None
             
     except FileNotFoundError as e:
-        print(f"❌ Archivo no encontrado: {str(e)}")
-        error_alert = dbc.Alert(
-            [
-                html.H4("❌ Archivo de pendientes no encontrado", className="alert-heading"),
-                html.P("No se pudo localizar el archivo de pendientes clasificadas."),
-                html.Hr(),
-                html.P("Ubicación esperada:", className="mb-1 fw-bold"),
-                html.Code("/workspaces/SIG-AUTOMATIZACION/PRUEBA/DATA/PENDIENTES/pendientes.tif"),
-                html.Hr(),
-                html.P("Por favor, asegúrate de que el archivo pendientes.tif esté disponible en esa ubicación.", className="mb-0")
-            ],
-            color="warning"
-        )
+        error_alert = dbc.Alert([
+            html.Div([
+                html.I(className="bi bi-file-excel-fill", style={'fontSize': '3rem', 'color': '#FB8C00'})
+            ], className='text-center mb-3'),
+            html.H4("Archivo No Encontrado", className="alert-heading text-center", style={'fontWeight': '700'}),
+            html.Hr(),
+            html.P("No se pudo localizar el archivo de pendientes clasificadas.", className='text-center'),
+            html.Div([
+                html.Strong("Ubicación esperada:"),
+                html.Br(),
+                html.Code("/workspaces/SIG-AUTOMATIZACION/PRUEBA/DATA/PENDIENTES/pendientes.tif",
+                         style={'background': '#FFF8E1', 'padding': '8px', 'borderRadius': '6px'})
+            ], className='mt-3 text-center')
+        ], color="warning", className='border-0')
         return error_alert, None
         
     except Exception as e:
@@ -263,18 +908,18 @@ def generate_and_save_map_callback(n_clicks, user_name, map_type, departamento, 
         import traceback
         traceback.print_exc()
         
-        error_alert = dbc.Alert(
-            [
-                html.H4("❌ Error inesperado", className="alert-heading"),
-                html.P(f"Ocurrió un error durante la generación: {str(e)}"),
-                html.Hr(),
-                html.P("Revisa la consola para más detalles.", className="mb-0")
-            ],
-            color="danger"
-        )
+        error_alert = dbc.Alert([
+            html.Div([
+                html.I(className="bi bi-x-octagon-fill", style={'fontSize': '3rem', 'color': '#C62828'})
+            ], className='text-center mb-3'),
+            html.H4("Error Inesperado", className="alert-heading text-center", style={'fontWeight': '700'}),
+            html.Hr(),
+            html.P(f"Ocurrió un error: {str(e)}", className='text-center'),
+            html.P("Revisa la consola para más detalles.", className='text-center mb-0 text-muted')
+        ], color="danger", className='border-0')
         return error_alert, None
 
-# CALLBACK PARA DESCARGA
+# Callback de descarga de mapa
 @app.callback(
     Output('download-map-image', 'data'),
     Input('download-button', 'n_clicks'),
@@ -282,63 +927,59 @@ def generate_and_save_map_callback(n_clicks, user_name, map_type, departamento, 
     prevent_initial_call=True
 )
 def download_map(n_clicks, filepath):
-    """Callback mejorado para descargar el mapa generado"""
-    if not n_clicks:
+    if not n_clicks or not filepath or not os.path.exists(filepath):
         return None
-    
-    if not filepath:
-        print("⚠️ No hay ruta de archivo almacenada")
-        return None
-    
-    if not os.path.exists(filepath):
-        print(f"⚠️ El archivo no existe: {filepath}")
-        return None
-    
     try:
         print(f"📥 Iniciando descarga de: {filepath}")
         return dcc.send_file(filepath)
     except Exception as e:
         print(f"❌ Error al descargar archivo: {e}")
-        import traceback
-        traceback.print_exc()
         return None
+
+# Callback placeholder para botón de recursos
+@app.callback(
+    Output('download-recursos-button', 'n_clicks'),
+    Input('download-recursos-button', 'n_clicks'),
+    prevent_initial_call=True
+)
+def download_recursos(n_clicks):
+    """
+    Placeholder para funcionalidad futura de descarga de recursos.
+    Aquí se implementará la lógica para descargar shapefiles, datos auxiliares, etc.
+    """
+    if n_clicks:
+        print(f"🔧 Botón 'Descargar Recursos' presionado. Funcionalidad pendiente de implementar.")
+        # TODO: Implementar descarga de recursos (shapefiles, guías, etc.)
+    return None
 
 if __name__ == '__main__':
     try:
         import geopandas, contextily, matplotlib_scalebar, rasterio
         print("✅ Librerías geoespaciales detectadas correctamente")
-        print("   - GeoPandas: OK")
-        print("   - Contextily: OK")
-        print("   - Matplotlib-scalebar: OK")
-        print("   - Rasterio: OK")
     except ImportError as e:
-        print("\n" + "="*80)
+        print(f"\n{'='*80}")
         print(" FALTAN LIBRERÍAS GEOESPACIALES ".center(80, "!"))
-        print("Por favor, instálalas con:")
-        print("pip install geopandas contextily matplotlib-scalebar rasterio")
-        print("="*80 + "\n")
-        print(f"Error específico: {e}")
+        print(f"{'='*80}\n")
     
-    # Verificar existencia del archivo de pendientes al inicio
-    print("\n" + "="*80)
+    # Verificación de pendientes
+    print(f"\n{'='*80}")
     print("📐 VERIFICANDO ARCHIVO DE PENDIENTES".center(80))
-    print("="*80)
+    print(f"{'='*80}")
     
     ruta_pendientes = "/workspaces/SIG-AUTOMATIZACION/PRUEBA/DATA/PENDIENTES/pendientes.tif"
     if os.path.exists(ruta_pendientes):
-        print(f"✅ Archivo de pendientes encontrado: {ruta_pendientes}")
-        print(f"📊 Tamaño: {os.path.getsize(ruta_pendientes) / (1024*1024):.2f} MB")
+        print(f"✅ Archivo encontrado: {os.path.getsize(ruta_pendientes) / (1024*1024):.2f} MB")
     else:
-        print("⚠️ ADVERTENCIA: No se encontró archivo de pendientes")
-        print(f"   Ubicación esperada: {ruta_pendientes}")
-        print("   El mapa de pendientes no funcionará hasta que se agregue el archivo.")
-    print("="*80 + "\n")
+        print("⚠️ ADVERTENCIA: Archivo de pendientes no encontrado")
+    print(f"{'='*80}\n")
     
-    print("\n" + "="*80)
-    print("🚀 INICIANDO SERVIDOR DASH".center(80))
-    print("="*80)
-    print(f"📌 Puerto: 8051")
-    print(f"🌐 URL: http://127.0.0.1:8051")
-    print("="*80 + "\n")
+    print(f"\n{'='*80}")
+    print("🚀 INICIANDO SERVIDOR DASH - SISTEMA DE MAPAS GEOGRÁFICOS".center(80))
+    print(f"{'='*80}")
+    print("🌿 Paleta de colores: Verde")
+    print("🎨 Logo personalizado integrado")
+    print("📌 Puerto: 8051")
+    print("🌐 URL: http://127.0.0.1:8051")
+    print(f"{'='*80}\n")
     
     app.run(debug=True, port=8051)
