@@ -1,4 +1,4 @@
-# Archivo: app.py - VERSIÓN CON LOGO PERSONALIZADO Y TEMA VERDE
+# Archivo: app.py - VERSIÓN CON LOGO PERSONALIZADO, TEMA VERDE Y MAPA GEOLÓGICO
 
 from dash import Dash, html, dcc, Input, Output, State
 import dash_bootstrap_components as dbc
@@ -12,6 +12,7 @@ from climatica_final import generar_mapa_climatica
 from poblacion_final import generar_mapa_poblacion
 from vias_final import generar_mapa_vias
 from pendientes_final import generar_mapa_pendientes
+from geologia_final import generar_mapa_geologia  # 🪨 NUEVO: Importamos el mapa geológico
 
 # ==================== CONFIGURACIÓN DE LA APP ====================
 app = Dash(
@@ -53,11 +54,11 @@ app.index_string = '''
                 min-height: 100vh;
             }
             
-            /* Cards con efecto glassmorphism */
+            /* Cards con efecto glassmorphism - FONDO TRANSPARENTE PLOMIZO-VERDOSO */
             .card {
                 backdrop-filter: blur(10px);
-                background: rgba(255, 255, 255, 0.97) !important;
-                border: 1px solid rgba(255, 255, 255, 0.4) !important;
+                background: rgba(200, 220, 190, 0.35) !important;
+                border: 1px solid rgba(255, 255, 255, 0.25) !important;
                 box-shadow: 0 10px 40px rgba(51, 105, 30, 0.2) !important;
                 transition: transform 0.3s ease, box-shadow 0.3s ease;
                 border-radius: 16px !important;
@@ -68,20 +69,21 @@ app.index_string = '''
                 box-shadow: 0 15px 50px rgba(51, 105, 30, 0.3) !important;
             }
             
-            /* Inputs modernos con acento verde */
+            /* Inputs modernos con acento verde - TRANSPARENTES */
             .form-control, .form-select {
-                border: 2px solid #C5E1A5 !important;
+                border: 2px solid rgba(197, 225, 165, 0.5) !important;
                 border-radius: 12px !important;
                 padding: 12px 16px !important;
                 transition: all 0.3s ease;
-                background: #FAFAFA !important;
+                background: rgba(245, 250, 240, 0.4) !important;
+                backdrop-filter: blur(5px);
             }
             
             .form-control:focus, .form-select:focus {
                 border-color: #7CB342 !important;
                 box-shadow: 0 0 0 3px rgba(124, 179, 66, 0.15) !important;
                 transform: translateY(-2px);
-                background: white !important;
+                background: rgba(255, 255, 255, 0.6) !important;
             }
             
             /* Botón Generar Mapa - Verde */
@@ -166,12 +168,22 @@ app.index_string = '''
                 box-shadow: 0 4px 20px rgba(51, 105, 30, 0.15);
             }
             
+            .navbar-custom .container-fluid {
+                display: flex !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+            }
+            
             .navbar-brand {
                 font-weight: 800 !important;
                 font-size: 1.3rem !important;
                 letter-spacing: 0.5px !important;
                 display: flex !important;
                 align-items: center !important;
+            }
+            
+            .navbar-nav {
+                margin-left: auto !important;
             }
             
             /* Labels con estilo verde */
@@ -213,14 +225,14 @@ app.index_string = '''
                 border-left: 5px solid #7CB342;
             }
             
-            /* Login container */
+            /* Login container - TRANSPARENTE */
             .login-container {
                 backdrop-filter: blur(10px);
-                background: rgba(255, 255, 255, 0.98);
+                background: rgba(240, 250, 235, 0.45);
                 border-radius: 20px;
                 padding: 50px;
                 box-shadow: 0 25px 70px rgba(51, 105, 30, 0.3);
-                border: 2px solid rgba(139, 195, 74, 0.2);
+                border: 2px solid rgba(139, 195, 74, 0.25);
             }
             
             /* Animación de rotación para el logo */
@@ -236,6 +248,23 @@ app.index_string = '''
             
             .logo-rotation:hover {
                 animation-duration: 1.5s;
+            }
+            
+            /* Animación de rotación 3D para el icono de reloj ⏳ - Cayendo la arena */
+            @keyframes hourglassSpin {
+                0% { transform: rotateZ(0deg); }
+                50% { transform: rotateZ(180deg); }
+                100% { transform: rotateZ(360deg); }
+            }
+            
+            .hourglass-spin {
+                display: inline-block;
+                animation: hourglassSpin 2s linear infinite;
+                transform-style: preserve-3d;
+            }
+            
+            .hourglass-spin:hover {
+                animation-duration: 1s;
             }
             
             /* Animaciones */
@@ -312,6 +341,48 @@ app.index_string = '''
                 margin-right: 15px;
                 filter: brightness(0) invert(1);
             }
+            
+            /* Footer de contactos - Esquina inferior izquierda */
+            .contact-footer {
+                position: fixed;
+                bottom: 20px;
+                left: 20px;
+                background: rgba(240, 250, 235, 0.5);
+                backdrop-filter: blur(10px);
+                padding: 15px 20px;
+                border-radius: 12px;
+                border: 2px solid rgba(139, 195, 74, 0.3);
+                box-shadow: 0 4px 20px rgba(51, 105, 30, 0.2);
+                z-index: 1000;
+                transition: all 0.3s ease;
+            }
+            
+            .contact-footer:hover {
+                background: rgba(240, 250, 235, 0.7);
+                transform: translateY(-3px);
+                box-shadow: 0 6px 25px rgba(51, 105, 30, 0.3);
+            }
+            
+            .contact-footer a {
+                color: #33691E;
+                text-decoration: none;
+                font-weight: 600;
+                font-size: 0.9rem;
+                transition: all 0.3s ease;
+                display: inline-flex;
+                align-items: center;
+                margin: 0 10px;
+            }
+            
+            .contact-footer a:hover {
+                color: #7CB342;
+                transform: translateX(3px);
+            }
+            
+            .contact-footer a i {
+                font-size: 1.2rem;
+                margin-right: 6px;
+            }
         </style>
     </head>
     <body>
@@ -363,6 +434,19 @@ except Exception as e:
 
 # ==================== LAYOUT DE LOGIN ====================
 login_layout = dbc.Container([
+    # Footer de contactos - Esquina inferior izquierda (también en login)
+    html.Div([
+        html.A([
+            html.I(className="bi bi-globe2"),
+            "escuelar.org"
+        ], href="https://escuelar.org/", target="_blank"),
+        html.Span(" | ", style={'color': '#7CB342', 'fontWeight': '700'}),
+        html.A([
+            html.I(className="bi bi-linkedin"),
+            "LinkedIn"
+        ], href="https://www.linkedin.com/company/escuelar/about/", target="_blank")
+    ], className='contact-footer'),
+    
     dbc.Row(
         dbc.Col(
             html.Div([
@@ -450,6 +534,19 @@ dashboard_layout = dbc.Container([
     dcc.Download(id="download-map-image"),
     dcc.Store(id='map-filepath-store', storage_type='memory'),
     
+    # Footer de contactos - Esquina inferior izquierda
+    html.Div([
+        html.A([
+            html.I(className="bi bi-globe2"),
+            "escuelar.org"
+        ], href="https://escuelar.org/", target="_blank"),
+        html.Span(" | ", style={'color': '#7CB342', 'fontWeight': '700'}),
+        html.A([
+            html.I(className="bi bi-linkedin"),
+            "LinkedIn"
+        ], href="https://www.linkedin.com/company/escuelar/about/", target="_blank")
+    ], className='contact-footer'),
+    
     # Navbar premium
     dbc.NavbarSimple(
         children=[
@@ -480,8 +577,9 @@ dashboard_layout = dbc.Container([
         ],
         color="primary",
         dark=True,
-        className='mb-4 shadow-sm',
-        style={'fontSize': '1.2rem'}
+        className='mb-4 shadow-sm navbar-custom',
+        style={'fontSize': '1.2rem'},
+        fluid=True
     ),
     
     dbc.Row([
@@ -506,12 +604,12 @@ dashboard_layout = dbc.Container([
                                 dbc.Input(
                                     id='user-name-input',
                                     type='text',
-                                    placeholder='Ej: Juan Pérez',
+                                    placeholder='Ej: Daniel Porras Nuñez',
                                     className='mb-4'
                                 )
                             ]),
                             
-                            # Tipo de mapa
+                            # Tipo de mapa - AHORA CON GEOLOGÍA 🪨
                             html.Div([
                                 html.Label([
                                     html.I(className="bi bi-map me-2"),
@@ -520,12 +618,13 @@ dashboard_layout = dbc.Container([
                                 dcc.Dropdown(
                                     id='map-type',
                                     options=[
-                                        {'label': '🗺️ Ubicación Geográfica', 'value': 'geografico'},
-                                        {'label': '🌄 Geomorfología', 'value': 'geomorfologia'},
-                                        {'label': '🌡️ Clasificación Climática', 'value': 'climatica'},
-                                        {'label': '📐 Pendientes', 'value': 'pendientes'},
-                                        {'label': '🛣️ Vías', 'value': 'vias'},
-                                        {'label': '🏘️ Centros Poblados', 'value': 'centros'}
+                                        {'label': '🗺️ Mapa de ubicación Geográfica', 'value': 'geografico'},
+                                        {'label': '🌄 Mapa de geomorfología', 'value': 'geomorfologia'},
+                                        {'label': '🌡️ Mapa de clasificación climática', 'value': 'climatica'},
+                                        {'label': '📐 Mapa de pendientes', 'value': 'pendientes'},
+                                        {'label': '🛣️ Mapa de vías', 'value': 'vias'},
+                                        {'label': '🏘️ Mapa de centros poblados', 'value': 'centros'},
+                                        {'label': '🪨 Mapa de geología', 'value': 'geologia'}  # 🪨 NUEVO
                                     ],
                                     placeholder='Seleccione el tipo de mapa',
                                     className='mb-4'
@@ -581,32 +680,60 @@ dashboard_layout = dbc.Container([
                                 )
                             ])
                         ], md=12)
-                    ]),
+                    ])
+                ])
+            ], className='shadow-lg border-0 animated')
+        ], md=5, lg=4),
+        
+        # Panel de resultados derecho
+        dbc.Col([
+            # Card único que contiene todo
+            dbc.Card([
+                dbc.CardBody([
+                    # Área del mapa generado
+                    html.Div(
+                        id='map-container',
+                        children=[
+                            dbc.Alert([
+                                html.Div([
+                                    # ⏳ ICONO DE RELOJ GIRATORIO
+                                    html.I(className="bi bi-hourglass-split hourglass-spin", 
+                                          style={'fontSize': '4rem', 'color': '#7CB342'}),
+                                ], className='text-center mb-3'),
+                                html.H4("Esperando Generación", className="alert-heading text-center", style={'color': '#33691E', 'fontWeight': '700'}),
+                                html.P("Configure los parámetros en el panel izquierdo y haga clic en 'Generar Mapa' para comenzar.", 
+                                      className='text-center mb-0', style={'color': '#558B2F'})
+                            ], color="light", className='border-0 mb-4', style={'background': 'linear-gradient(135deg, #F1F8E9 0%, #DCEDC8 100%)'})
+                        ],
+                        className="result-panel"
+                    ),
                     
-                    html.Hr(),
+                    # Separador
+                    html.Hr(style={'borderTop': '2px dashed #C5E1A5', 'margin': '20px 0'}),
                     
-                    # Resumen de selección
-                    html.Div([
-                        html.H5([
-                            html.I(className="bi bi-clipboard-check me-2", style={'color': '#7CB342'}),
-                            "Resumen de Selección"
-                        ], className='mb-3', style={'color': '#33691E', 'fontWeight': '800'}),
-                        html.Div(
-                            id='selection-summary',
-                            children=[
-                                dbc.Alert([
-                                    html.I(className="bi bi-info-circle me-2"),
-                                    "Complete todos los campos para continuar"
-                                ], color="light", className='mb-0')
-                            ],
-                            className='selection-summary'
-                        )
-                    ]),
-                    
-                    html.Hr(),
-                    
-                    # Botones de acción
+                    # Resumen y botones en la misma fila
                     dbc.Row([
+                        # COLUMNA IZQUIERDA - Resumen de selección
+                        dbc.Col([
+                            html.Div([
+                                html.H5([
+                                    html.I(className="bi bi-clipboard-check me-2", style={'color': '#7CB342'}),
+                                    "Resumen de Selección"
+                                ], className='mb-3', style={'color': '#33691E', 'fontWeight': '800'}),
+                                html.Div(
+                                    id='selection-summary',
+                                    children=[
+                                        dbc.Alert([
+                                            html.I(className="bi bi-info-circle me-2"),
+                                            "Complete todos los campos para continuar"
+                                        ], color="light", className='mb-0')
+                                    ],
+                                    className='selection-summary'
+                                )
+                            ])
+                        ], md=6, className='pe-2'),
+                        
+                        # COLUMNA DERECHA - Botones de acción
                         dbc.Col([
                             dbc.Button([
                                 html.I(className="bi bi-rocket-takeoff me-2"),
@@ -616,9 +743,8 @@ dashboard_layout = dbc.Container([
                             color='success',
                             size='lg',
                             className='w-100 mb-3',
-                            disabled=True)
-                        ], md=12),
-                        dbc.Col([
+                            disabled=True),
+                            
                             dbc.Button([
                                 html.I(className="bi bi-download me-2"),
                                 'Descargar Mapa'
@@ -627,9 +753,8 @@ dashboard_layout = dbc.Container([
                             color='info',
                             size='lg',
                             className='w-100 mb-3',
-                            disabled=True)
-                        ], md=12),
-                        dbc.Col([
+                            disabled=True),
+                            
                             dbc.Button([
                                 html.I(className="bi bi-folder-symlink me-2"),
                                 'Descargar Recursos'
@@ -637,29 +762,9 @@ dashboard_layout = dbc.Container([
                             id='download-recursos-button',
                             className='w-100 btn-recursos',
                             size='lg')
-                        ], md=12)
-                    ])
+                        ], md=6, className='ps-2')
+                    ], className='g-0')
                 ])
-            ], className='shadow-lg border-0 animated')
-        ], md=5, lg=4),
-        
-        # Panel de resultados derecho
-        dbc.Col([
-            dbc.Card([
-                dbc.CardBody(
-                    id='map-container',
-                    children=[
-                        dbc.Alert([
-                            html.Div([
-                                html.I(className="bi bi-hourglass-split", style={'fontSize': '4rem', 'color': '#7CB342'}),
-                            ], className='text-center mb-3'),
-                            html.H4("Esperando Generación", className="alert-heading text-center", style={'color': '#33691E', 'fontWeight': '700'}),
-                            html.P("Configure los parámetros en el panel izquierdo y haga clic en 'Generar Mapa' para comenzar.", 
-                                  className='text-center mb-0', style={'color': '#558B2F'})
-                        ], color="light", className='border-0', style={'background': 'linear-gradient(135deg, #F1F8E9 0%, #DCEDC8 100%)'})
-                    ],
-                    className="h-100 result-panel"
-                )
             ], className="h-100 shadow-lg border-0 animated")
         ], md=7, lg=8)
     ], className='g-4')
@@ -759,7 +864,8 @@ def update_summary(user_name, map_type, departamento, provincia, distrito):
         'climatica': 'Clasificación Climática',
         'pendientes': 'Pendientes',
         'vias': 'Vías',
-        'centros': 'Centros Poblados'
+        'centros': 'Centros Poblados',
+        'geologia': 'Mapa Geológico'  # 🪨 NUEVO
     }
     
     summary_items = []
@@ -791,7 +897,7 @@ def update_summary(user_name, map_type, departamento, provincia, distrito):
     
     return html.Div(summary_items)
 
-# Callback de generación
+# Callback de generación - AHORA CON GEOLOGÍA 🪨
 @app.callback(
     Output('map-container', 'children'),
     Output('map-filepath-store', 'data'),
@@ -828,6 +934,9 @@ def generate_and_save_map_callback(n_clicks, user_name, map_type, departamento, 
         elif map_type == 'centros':
             print(f"\n🏘️ Generando mapa de centros poblados para {distrito}...")
             ruta_guardado = generar_mapa_poblacion(user_name, departamento, provincia, distrito)
+        elif map_type == 'geologia':  # 🪨 NUEVO CASO PARA GEOLOGÍA
+            print(f"\n🪨 Generando mapa geológico para {distrito}...")
+            ruta_guardado = generar_mapa_geologia(user_name, departamento, provincia, distrito)
         
         if ruta_guardado and os.path.exists(ruta_guardado):
             file_size_mb = os.path.getsize(ruta_guardado) / (1024 * 1024)
@@ -880,6 +989,7 @@ def generate_and_save_map_callback(n_clicks, user_name, map_type, departamento, 
                         html.Li("Que los datos geográficos estén disponibles"),
                         html.Li("Que el distrito seleccionado sea correcto"),
                         html.Li("Para pendientes: que exista pendientes.tif"),
+                        html.Li("Para geología: que existan los shapefiles del departamento"),
                         html.Li("Los logs en la terminal para más detalles")
                     ])
                 ], className='mt-3')
@@ -893,12 +1003,14 @@ def generate_and_save_map_callback(n_clicks, user_name, map_type, departamento, 
             ], className='text-center mb-3'),
             html.H4("Archivo No Encontrado", className="alert-heading text-center", style={'fontWeight': '700'}),
             html.Hr(),
-            html.P("No se pudo localizar el archivo de pendientes clasificadas.", className='text-center'),
+            html.P(f"No se pudo localizar el archivo necesario: {str(e)}", className='text-center'),
             html.Div([
-                html.Strong("Ubicación esperada:"),
+                html.Strong("Ubicaciones esperadas:"),
                 html.Br(),
-                html.Code("/workspaces/SIG-AUTOMATIZACION/PRUEBA/DATA/PENDIENTES/pendientes.tif",
-                         style={'background': '#FFF8E1', 'padding': '8px', 'borderRadius': '6px'})
+                html.Code("Pendientes: /workspaces/SIG-AUTOMATIZACION/PRUEBA/DATA/PENDIENTES/pendientes.tif",
+                         style={'background': '#FFF8E1', 'padding': '8px', 'borderRadius': '6px', 'display': 'block', 'marginBottom': '8px'}),
+                html.Code("Geología: /workspaces/SIG-AUTOMATIZACION/PRUEBA/DATA/GEOLOGIA/{DEPARTAMENTO}/geolo_{departamento}.shp",
+                         style={'background': '#FFF8E1', 'padding': '8px', 'borderRadius': '6px', 'display': 'block'})
             ], className='mt-3 text-center')
         ], color="warning", className='border-0')
         return error_alert, None
@@ -973,11 +1085,30 @@ if __name__ == '__main__':
         print("⚠️ ADVERTENCIA: Archivo de pendientes no encontrado")
     print(f"{'='*80}\n")
     
+    # Verificación de geología 🪨
+    print(f"\n{'='*80}")
+    print("🪨 VERIFICANDO ARCHIVOS DE GEOLOGÍA".center(80))
+    print(f"{'='*80}")
+    
+    ruta_geologia_base = "/workspaces/SIG-AUTOMATIZACION/PRUEBA/DATA/GEOLOGIA"
+    if os.path.exists(ruta_geologia_base):
+        departamentos_geo = [d for d in os.listdir(ruta_geologia_base) if os.path.isdir(os.path.join(ruta_geologia_base, d))]
+        print(f"✅ Carpeta de geología encontrada")
+        print(f"   📂 Departamentos con datos geológicos: {len(departamentos_geo)}")
+        if departamentos_geo:
+            print(f"   📋 Primeros 5: {', '.join(sorted(departamentos_geo)[:5])}")
+    else:
+        print("⚠️ ADVERTENCIA: Carpeta de geología no encontrada")
+    print(f"{'='*80}\n")
+    
     print(f"\n{'='*80}")
     print("🚀 INICIANDO SERVIDOR DASH - SISTEMA DE MAPAS GEOGRÁFICOS".center(80))
     print(f"{'='*80}")
     print("🌿 Paleta de colores: Verde")
     print("🎨 Logo personalizado integrado")
+    print("⏳ Icono de reloj con animación 3D girando sobre su eje")
+    print("💎 Fondos transparentes plomizo-verdosos con glassmorphism")
+    print("🪨 NUEVO: Mapa Geológico integrado")
     print("📌 Puerto: 8051")
     print("🌐 URL: http://127.0.0.1:8051")
     print(f"{'='*80}\n")
