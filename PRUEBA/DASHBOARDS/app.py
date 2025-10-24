@@ -1,4 +1,4 @@
-# Archivo: app.py - VERSIÓN CON LOGO PERSONALIZADO, TEMA VERDE Y MAPA GEOLÓGICO
+# Archivo: app.py - VERSIÓN CON INDICADOR DE CARGA VISUAL
 
 from dash import Dash, html, dcc, Input, Output, State
 import dash_bootstrap_components as dbc
@@ -12,7 +12,7 @@ from climatica_final import generar_mapa_climatica
 from poblacion_final import generar_mapa_poblacion
 from vias_final import generar_mapa_vias
 from pendientes_final import generar_mapa_pendientes
-from geologia_final import generar_mapa_geologia  # 🪨 NUEVO: Importamos el mapa geológico
+from geologia_final import generar_mapa_geologia
 
 # ==================== CONFIGURACIÓN DE LA APP ====================
 app = Dash(
@@ -41,6 +41,7 @@ app.index_string = '''
                 --escuela-verde: #7CB342;
                 --escuela-verde-oscuro: #558B2F;
                 --escuela-verde-profundo: #33691E;
+                --gris-carga: #90A4AE;
             }
             
             /* Fuente moderna */
@@ -54,7 +55,7 @@ app.index_string = '''
                 min-height: 100vh;
             }
             
-            /* Cards con efecto glassmorphism - FONDO TRANSPARENTE PLOMIZO-VERDOSO */
+            /* Cards con efecto glassmorphism */
             .card {
                 backdrop-filter: blur(10px);
                 background: rgba(200, 220, 190, 0.35) !important;
@@ -69,7 +70,7 @@ app.index_string = '''
                 box-shadow: 0 15px 50px rgba(51, 105, 30, 0.3) !important;
             }
             
-            /* Inputs modernos con acento verde - TRANSPARENTES */
+            /* Inputs modernos con acento verde */
             .form-control, .form-select {
                 border: 2px solid rgba(197, 225, 165, 0.5) !important;
                 border-radius: 12px !important;
@@ -106,8 +107,11 @@ app.index_string = '''
             }
             
             .btn-success:disabled {
-                background: linear-gradient(135deg, #C5E1A5 0%, #AED581 100%) !important;
-                opacity: 0.6;
+                background: linear-gradient(135deg, #B0BEC5 0%, #90A4AE 100%) !important;
+                opacity: 0.7;
+                cursor: wait !important;
+                box-shadow: 0 2px 10px rgba(144, 164, 174, 0.3) !important;
+                animation: pulse-loading 1.5s ease-in-out infinite;
             }
             
             /* Botón Descargar Mapa - Verde Oscuro */
@@ -129,8 +133,10 @@ app.index_string = '''
             }
             
             .btn-info:disabled {
-                background: linear-gradient(135deg, #9CCC65 0%, #8BC34A 100%) !important;
-                opacity: 0.6;
+                background: linear-gradient(135deg, #B0BEC5 0%, #90A4AE 100%) !important;
+                opacity: 0.7;
+                cursor: wait !important;
+                box-shadow: 0 2px 10px rgba(144, 164, 174, 0.3) !important;
             }
             
             /* Botón Descargar Recursos - Verde Medio */
@@ -145,10 +151,17 @@ app.index_string = '''
                 color: white !important;
             }
             
-            .btn-recursos:hover {
+            .btn-recursos:hover:not(:disabled) {
                 background: linear-gradient(135deg, #558B2F 0%, #33691E 100%) !important;
                 transform: translateY(-3px);
                 box-shadow: 0 6px 30px rgba(104, 159, 56, 0.5) !important;
+            }
+            
+            .btn-recursos:disabled {
+                background: linear-gradient(135deg, #B0BEC5 0%, #90A4AE 100%) !important;
+                opacity: 0.7;
+                cursor: wait !important;
+                box-shadow: 0 2px 10px rgba(144, 164, 174, 0.3) !important;
             }
             
             /* Botón Logout */
@@ -225,7 +238,7 @@ app.index_string = '''
                 border-left: 5px solid #7CB342;
             }
             
-            /* Login container - TRANSPARENTE */
+            /* Login container */
             .login-container {
                 backdrop-filter: blur(10px);
                 background: rgba(240, 250, 235, 0.45);
@@ -250,7 +263,7 @@ app.index_string = '''
                 animation-duration: 1.5s;
             }
             
-            /* Animación de rotación 3D para el icono de reloj ⏳ - Cayendo la arena */
+            /* Animación de rotación 3D para el icono de reloj */
             @keyframes hourglassSpin {
                 0% { transform: rotateZ(0deg); }
                 50% { transform: rotateZ(180deg); }
@@ -267,7 +280,19 @@ app.index_string = '''
                 animation-duration: 1s;
             }
             
-            /* Animaciones */
+            /* Animación de pulso para botones en carga */
+            @keyframes pulse-loading {
+                0%, 100% { 
+                    opacity: 0.7;
+                    transform: scale(1);
+                }
+                50% { 
+                    opacity: 0.9;
+                    transform: scale(1.02);
+                }
+            }
+            
+            /* Animaciones generales */
             @keyframes fadeIn {
                 from { opacity: 0; transform: translateY(30px); }
                 to { opacity: 1; transform: translateY(0); }
@@ -317,24 +342,6 @@ app.index_string = '''
                 background-clip: text;
             }
             
-            /* Dropdown mejorado */
-            .Select-control {
-                border-radius: 12px !important;
-            }
-            
-            /* Espacio para logo en resultado */
-            .result-panel {
-                position: relative;
-            }
-            
-            .download-section {
-                background: linear-gradient(135deg, #F1F8E9 0%, #DCEDC8 100%);
-                padding: 20px;
-                border-radius: 12px;
-                border: 2px dashed #8BC34A;
-                margin-top: 15px;
-            }
-            
             /* Logo en navbar */
             .navbar-logo {
                 height: 40px;
@@ -342,7 +349,7 @@ app.index_string = '''
                 filter: brightness(0) invert(1);
             }
             
-            /* Footer de contactos - Esquina inferior izquierda */
+            /* Footer de contactos */
             .contact-footer {
                 position: fixed;
                 bottom: 20px;
@@ -382,6 +389,15 @@ app.index_string = '''
             .contact-footer a i {
                 font-size: 1.2rem;
                 margin-right: 6px;
+            }
+            
+            /* Sección de descarga */
+            .download-section {
+                background: linear-gradient(135deg, #F1F8E9 0%, #DCEDC8 100%);
+                padding: 20px;
+                border-radius: 12px;
+                border: 2px dashed #8BC34A;
+                margin-top: 15px;
             }
         </style>
     </head>
@@ -434,7 +450,7 @@ except Exception as e:
 
 # ==================== LAYOUT DE LOGIN ====================
 login_layout = dbc.Container([
-    # Footer de contactos - Esquina inferior izquierda (también en login)
+    # Footer de contactos
     html.Div([
         html.A([
             html.I(className="bi bi-globe2"),
@@ -450,7 +466,6 @@ login_layout = dbc.Container([
     dbc.Row(
         dbc.Col(
             html.Div([
-                # Logo con animación de rotación
                 html.Div([
                     html.Img(
                         src='/assets/LOGO.png',
@@ -463,10 +478,10 @@ login_layout = dbc.Container([
                     )
                 ], className='text-center'),
                 
-                html.H2("Sistema de Mapas Geográficos", 
+                html.H2("PLATAFORMA DE AUTOMATIZACIÓN MAPAS TEMATICOS", 
                        className="text-center mb-4",
                        style={
-                           'color': '#33691E', 
+                           'color': "#FEFFFE", 
                            'fontWeight': '800',
                            'fontSize': '1.8rem',
                            'letterSpacing': '0.5px'
@@ -474,7 +489,6 @@ login_layout = dbc.Container([
                 
                 dbc.Card([
                     dbc.CardBody([
-                        # Usuario
                         html.Div([
                             html.Label([
                                 html.I(className="bi bi-person-fill me-2"),
@@ -488,7 +502,6 @@ login_layout = dbc.Container([
                             )
                         ]),
                         
-                        # Contraseña
                         html.Div([
                             html.Label([
                                 html.I(className="bi bi-lock-fill me-2"),
@@ -502,7 +515,6 @@ login_layout = dbc.Container([
                             )
                         ]),
                         
-                        # Botón de login
                         dbc.Button([
                             html.I(className="bi bi-box-arrow-in-right me-2"),
                             'Iniciar Sesión'
@@ -512,7 +524,6 @@ login_layout = dbc.Container([
                         className='w-100 btn-success',
                         style={'padding': '14px', 'fontSize': '1.1rem'}),
                         
-                        # Alerta
                         html.Div(id='login-alert', className='mt-3')
                     ])
                 ], className='shadow-lg border-0 login-container')
@@ -533,8 +544,9 @@ login_layout = dbc.Container([
 dashboard_layout = dbc.Container([
     dcc.Download(id="download-map-image"),
     dcc.Store(id='map-filepath-store', storage_type='memory'),
+    dcc.Store(id='loading-state', storage_type='memory', data=False),
     
-    # Footer de contactos - Esquina inferior izquierda
+    # Footer de contactos
     html.Div([
         html.A([
             html.I(className="bi bi-globe2"),
@@ -587,15 +599,13 @@ dashboard_layout = dbc.Container([
         dbc.Col([
             dbc.Card([
                 dbc.CardBody([
-                    # Título de sección
                     html.Div([
-                        html.I(className="bi bi-sliders me-2", style={'fontSize': '1.8rem', 'color': '#7CB342'}),
-                        html.H4("Panel de Control", className='panel-header', style={'display': 'inline', 'fontWeight': '800'})
+                        html.I(className="bi bi-sliders me-2", style={'fontSize': '1.8rem', 'color': "#EEF5E7"}),
+                        html.H4("Panel de Control", className='panel-header', style={'display': 'inline', 'fontWeight': '900','color': "#EEF5E7"})
                     ], className='mb-4'),
                     
                     dbc.Row([
                         dbc.Col([
-                            # Usuario
                             html.Div([
                                 html.Label([
                                     html.I(className="bi bi-person-badge me-2"),
@@ -609,7 +619,6 @@ dashboard_layout = dbc.Container([
                                 )
                             ]),
                             
-                            # Tipo de mapa - AHORA CON GEOLOGÍA 🪨
                             html.Div([
                                 html.Label([
                                     html.I(className="bi bi-map me-2"),
@@ -624,7 +633,7 @@ dashboard_layout = dbc.Container([
                                         {'label': '📐 Mapa de pendientes', 'value': 'pendientes'},
                                         {'label': '🛣️ Mapa de vías', 'value': 'vias'},
                                         {'label': '🏘️ Mapa de centros poblados', 'value': 'centros'},
-                                        {'label': '🪨 Mapa de geología', 'value': 'geologia'}  # 🪨 NUEVO
+                                        {'label': '🪨 Mapa de geología', 'value': 'geologia'}
                                     ],
                                     placeholder='Seleccione el tipo de mapa',
                                     className='mb-4'
@@ -633,12 +642,10 @@ dashboard_layout = dbc.Container([
                         ], md=12)
                     ]),
                     
-                    # Separador decorativo
                     html.Hr(style={'borderTop': '2px dashed #C5E1A5', 'margin': '20px 0'}),
                     
                     dbc.Row([
                         dbc.Col([
-                            # Departamento
                             html.Div([
                                 html.Label([
                                     html.I(className="bi bi-geo-alt me-2"),
@@ -652,7 +659,6 @@ dashboard_layout = dbc.Container([
                                 )
                             ]),
                             
-                            # Provincia
                             html.Div([
                                 html.Label([
                                     html.I(className="bi bi-building me-2"),
@@ -666,7 +672,6 @@ dashboard_layout = dbc.Container([
                                 )
                             ]),
                             
-                            # Distrito
                             html.Div([
                                 html.Label([
                                     html.I(className="bi bi-house me-2"),
@@ -687,16 +692,13 @@ dashboard_layout = dbc.Container([
         
         # Panel de resultados derecho
         dbc.Col([
-            # Card único que contiene todo
             dbc.Card([
                 dbc.CardBody([
-                    # Área del mapa generado
                     html.Div(
                         id='map-container',
                         children=[
                             dbc.Alert([
                                 html.Div([
-                                    # ⏳ ICONO DE RELOJ GIRATORIO
                                     html.I(className="bi bi-hourglass-split hourglass-spin", 
                                           style={'fontSize': '4rem', 'color': '#7CB342'}),
                                 ], className='text-center mb-3'),
@@ -708,10 +710,8 @@ dashboard_layout = dbc.Container([
                         className="result-panel"
                     ),
                     
-                    # Separador
                     html.Hr(style={'borderTop': '2px dashed #C5E1A5', 'margin': '20px 0'}),
                     
-                    # Resumen y botones en la misma fila
                     dbc.Row([
                         # COLUMNA IZQUIERDA - Resumen de selección
                         dbc.Col([
@@ -757,7 +757,7 @@ dashboard_layout = dbc.Container([
                             
                             dbc.Button([
                                 html.I(className="bi bi-folder-symlink me-2"),
-                                'Descargar Recursos'
+                                'Descargar Recursos (Inhabilitado)'
                             ],
                             id='download-recursos-button',
                             className='w-100 btn-recursos',
@@ -773,6 +773,7 @@ dashboard_layout = dbc.Container([
 app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
     dcc.Store(id='session-store', storage_type='session'),
+    dcc.Store(id='loading-state', storage_type='memory', data=False),
     html.Div(id='page-content')
 ])
 
@@ -841,11 +842,22 @@ def update_distritos(provincia):
 
 @app.callback(
     Output('generate-map-button', 'disabled'), 
-    Output('download-button', 'disabled'), 
-    [Input(c, 'value') for c in ['user-name-input', 'map-type', 'departamento-dropdown', 'provincia-dropdown', 'distrito-dropdown']]
+    Output('download-button', 'disabled'),
+    Output('download-recursos-button', 'disabled'),
+    [Input(c, 'value') for c in ['user-name-input', 'map-type', 'departamento-dropdown', 'provincia-dropdown', 'distrito-dropdown']],
+    Input('loading-state', 'data')
 )
 def enable_buttons(*values): 
-    return not all(values), not all(values)
+    loading_state = values[-1]
+    form_values = values[:-1]
+    
+    # Si está cargando, deshabilitar todos los botones
+    if loading_state:
+        return True, True, True
+    
+    # Si no está cargando, habilitar según los valores del formulario
+    all_filled = all(form_values)
+    return not all_filled, not all_filled, False
 
 @app.callback(
     Output('selection-summary', 'children'), 
@@ -865,7 +877,7 @@ def update_summary(user_name, map_type, departamento, provincia, distrito):
         'pendientes': 'Pendientes',
         'vias': 'Vías',
         'centros': 'Centros Poblados',
-        'geologia': 'Mapa Geológico'  # 🪨 NUEVO
+        'geologia': 'Mapa Geológico'
     }
     
     summary_items = []
@@ -897,10 +909,26 @@ def update_summary(user_name, map_type, departamento, provincia, distrito):
     
     return html.Div(summary_items)
 
-# Callback de generación - AHORA CON GEOLOGÍA 🪨
+# Callback para activar el estado de carga al presionar el botón
+@app.callback(
+    Output('loading-state', 'data', allow_duplicate=True),
+    Output('generate-map-button', 'children', allow_duplicate=True),
+    Input('generate-map-button', 'n_clicks'),
+    prevent_initial_call=True
+)
+def activate_loading(n_clicks):
+    """Activa el estado de carga cuando se presiona el botón"""
+    return True, [
+        html.I(className="bi bi-hourglass-split hourglass-spin me-2"),
+        'Procesando...'
+    ]
+
+# Callback de generación con estado de carga
 @app.callback(
     Output('map-container', 'children'),
     Output('map-filepath-store', 'data'),
+    Output('loading-state', 'data'),
+    Output('generate-map-button', 'children'),
     Input('generate-map-button', 'n_clicks'),
     [State('user-name-input', 'value'),
      State('map-type', 'value'),
@@ -934,7 +962,7 @@ def generate_and_save_map_callback(n_clicks, user_name, map_type, departamento, 
         elif map_type == 'centros':
             print(f"\n🏘️ Generando mapa de centros poblados para {distrito}...")
             ruta_guardado = generar_mapa_poblacion(user_name, departamento, provincia, distrito)
-        elif map_type == 'geologia':  # 🪨 NUEVO CASO PARA GEOLOGÍA
+        elif map_type == 'geologia':
             print(f"\n🪨 Generando mapa geológico para {distrito}...")
             ruta_guardado = generar_mapa_geologia(user_name, departamento, provincia, distrito)
         
@@ -963,18 +991,22 @@ def generate_and_save_map_callback(n_clicks, user_name, map_type, departamento, 
                     ], className='mb-3'),
                 ], color="success", className='border-0 mb-3'),
                 
-                # Sección de descarga destacada
                 html.Div([
                     html.H5([
                         html.I(className="bi bi-arrow-down-circle-fill me-2", style={'color': '#7CB342'}),
                         "Descargar Mapa"
                     ], className='text-center mb-3', style={'color': '#33691E', 'fontWeight': '700'}),
-                    html.P("Haz clic en el botón 'Descargar Mapa' en el panel izquierdo para obtener el archivo.",
+                    html.P("Haz clic en el botón 'Descargar Mapa' para obtener el archivo.",
                           className='text-center mb-0', style={'color': '#558B2F', 'fontSize': '0.95rem'})
                 ], className='download-section')
             ])
             
-            return success_alert, ruta_guardado
+            button_text = [
+                html.I(className="bi bi-rocket-takeoff me-2"),
+                'Generar Mapa'
+            ]
+            
+            return success_alert, ruta_guardado, False, button_text
         else:
             error_alert = dbc.Alert([
                 html.Div([
@@ -994,7 +1026,13 @@ def generate_and_save_map_callback(n_clicks, user_name, map_type, departamento, 
                     ])
                 ], className='mt-3')
             ], color="danger", className='border-0')
-            return error_alert, None
+            
+            button_text = [
+                html.I(className="bi bi-rocket-takeoff me-2"),
+                'Generar Mapa'
+            ]
+            
+            return error_alert, None, False, button_text
             
     except FileNotFoundError as e:
         error_alert = dbc.Alert([
@@ -1013,7 +1051,13 @@ def generate_and_save_map_callback(n_clicks, user_name, map_type, departamento, 
                          style={'background': '#FFF8E1', 'padding': '8px', 'borderRadius': '6px', 'display': 'block'})
             ], className='mt-3 text-center')
         ], color="warning", className='border-0')
-        return error_alert, None
+        
+        button_text = [
+            html.I(className="bi bi-rocket-takeoff me-2"),
+            'Generar Mapa'
+        ]
+        
+        return error_alert, None, False, button_text
         
     except Exception as e:
         print(f"❌ Excepción al generar mapa: {str(e)}")
@@ -1029,9 +1073,14 @@ def generate_and_save_map_callback(n_clicks, user_name, map_type, departamento, 
             html.P(f"Ocurrió un error: {str(e)}", className='text-center'),
             html.P("Revisa la consola para más detalles.", className='text-center mb-0 text-muted')
         ], color="danger", className='border-0')
-        return error_alert, None
+        
+        button_text = [
+            html.I(className="bi bi-rocket-takeoff me-2"),
+            'Generar Mapa'
+        ]
+        
+        return error_alert, None, False, button_text
 
-# Callback de descarga de mapa
 @app.callback(
     Output('download-map-image', 'data'),
     Input('download-button', 'n_clicks'),
@@ -1048,20 +1097,14 @@ def download_map(n_clicks, filepath):
         print(f"❌ Error al descargar archivo: {e}")
         return None
 
-# Callback placeholder para botón de recursos
 @app.callback(
     Output('download-recursos-button', 'n_clicks'),
     Input('download-recursos-button', 'n_clicks'),
     prevent_initial_call=True
 )
 def download_recursos(n_clicks):
-    """
-    Placeholder para funcionalidad futura de descarga de recursos.
-    Aquí se implementará la lógica para descargar shapefiles, datos auxiliares, etc.
-    """
     if n_clicks:
         print(f"🔧 Botón 'Descargar Recursos' presionado. Funcionalidad pendiente de implementar.")
-        # TODO: Implementar descarga de recursos (shapefiles, guías, etc.)
     return None
 
 if __name__ == '__main__':
@@ -1073,7 +1116,6 @@ if __name__ == '__main__':
         print(" FALTAN LIBRERÍAS GEOESPACIALES ".center(80, "!"))
         print(f"{'='*80}\n")
     
-    # Verificación de pendientes
     print(f"\n{'='*80}")
     print("📐 VERIFICANDO ARCHIVO DE PENDIENTES".center(80))
     print(f"{'='*80}")
@@ -1085,7 +1127,6 @@ if __name__ == '__main__':
         print("⚠️ ADVERTENCIA: Archivo de pendientes no encontrado")
     print(f"{'='*80}\n")
     
-    # Verificación de geología 🪨
     print(f"\n{'='*80}")
     print("🪨 VERIFICANDO ARCHIVOS DE GEOLOGÍA".center(80))
     print(f"{'='*80}")
@@ -1106,9 +1147,10 @@ if __name__ == '__main__':
     print(f"{'='*80}")
     print("🌿 Paleta de colores: Verde")
     print("🎨 Logo personalizado integrado")
-    print("⏳ Icono de reloj con animación 3D girando sobre su eje")
+    print("⏳ Indicador de carga visual con botones en gris")
     print("💎 Fondos transparentes plomizo-verdosos con glassmorphism")
-    print("🪨 NUEVO: Mapa Geológico integrado")
+    print("🪨 Mapa Geológico integrado")
+    print("🔄 Estados de carga: Botones cambian a gris durante el procesamiento")
     print("📌 Puerto: 8051")
     print("🌐 URL: http://127.0.0.1:8051")
     print(f"{'='*80}\n")
