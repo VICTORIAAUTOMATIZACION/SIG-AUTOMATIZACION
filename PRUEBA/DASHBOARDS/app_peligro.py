@@ -1,4 +1,4 @@
-# Archivo: app_peligro.py - DASHBOARD PARA MAPA DE PELIGRO (TEMA OSCURO)
+# Archivo: app_peligro.py - DASHBOARD PROFESIONAL PARA MAPA DE PELIGRO
 
 from dash import Dash, html, dcc, Input, Output, State
 import dash_bootstrap_components as dbc
@@ -12,14 +12,14 @@ from mapa_peligro import generar_mapa_peligro
 app = Dash(
     __name__, 
     external_stylesheets=[
-        dbc.themes.DARKLY,
+        dbc.themes.BOOTSTRAP,
         dbc.icons.BOOTSTRAP,
-        "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        "https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap"
     ], 
     suppress_callback_exceptions=True
 )
 
-# Inyectar CSS con tema TOTALMENTE NEGRO
+# Inyectar CSS profesional moderno
 app.index_string = '''
 <!DOCTYPE html>
 <html>
@@ -29,327 +29,461 @@ app.index_string = '''
         {%favicon%}
         {%css%}
         <style>
-            /* Variables de color - TEMA NEGRO */
+            /* VARIABLES PROFESIONALES */
             :root {
-                --negro-principal: #000000;
-                --negro-secundario: #0a0a0a;
-                --negro-terciario: #1a1a1a;
-                --gris-oscuro: #2a2a2a;
-                --gris-medio: #3a3a3a;
-                --rojo-peligro: #FF3B3B;
-                --rojo-oscuro: #CC0000;
-                --gris-texto: #e0e0e0;
+                --primary: #1a1a2e;
+                --secondary: #16213e;
+                --accent: #e74c3c;
+                --accent-light: #ff6b5b;
+                --accent-dark: #c0392b;
+                --success: #27ae60;
+                --text-primary: #ecf0f1;
+                --text-secondary: #bdc3c7;
+                --border: #34495e;
+                --hover: #0f3460;
             }
             
-            /* Fuente moderna */
             * {
-                font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             }
             
-            /* Fondo negro total */
+            /* FONDO BASE */
             body {
-                background: var(--negro-principal) !important;
+                background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
                 min-height: 100vh;
-                color: var(--gris-texto) !important;
+                color: var(--text-primary);
+                overflow-x: hidden;
             }
             
-            /* Cards con fondo negro */
-            .card {
-                background: var(--negro-secundario) !important;
-                border: 2px solid var(--gris-medio) !important;
-                box-shadow: 0 10px 40px rgba(255, 59, 59, 0.2) !important;
-                transition: transform 0.3s ease, box-shadow 0.3s ease;
-                border-radius: 16px !important;
+            html, body, #react-entry-point {
+                height: 100%;
             }
             
-            .card:hover {
-                transform: translateY(-5px);
-                box-shadow: 0 15px 50px rgba(255, 59, 59, 0.4) !important;
-                border-color: var(--rojo-peligro) !important;
-            }
-            
-            /* Inputs oscuros */
-            .form-control, .form-select {
-                background: var(--negro-terciario) !important;
-                border: 2px solid var(--gris-oscuro) !important;
-                border-radius: 12px !important;
-                padding: 12px 16px !important;
-                transition: all 0.3s ease;
-                color: var(--gris-texto) !important;
-            }
-            
-            .form-control:focus, .form-select:focus {
-                border-color: var(--rojo-peligro) !important;
-                box-shadow: 0 0 0 3px rgba(255, 59, 59, 0.2) !important;
-                transform: translateY(-2px);
-                background: var(--negro-secundario) !important;
-                color: white !important;
-            }
-            
-            /* Opciones del dropdown */
-            .Select-menu-outer, .VirtualizedSelectOption {
-                background: var(--negro-terciario) !important;
-                color: var(--gris-texto) !important;
-            }
-            
-            /* Botón Generar Mapa - Rojo */
-            .btn-success {
-                background: linear-gradient(135deg, var(--rojo-peligro) 0%, var(--rojo-oscuro) 100%) !important;
-                border: none !important;
-                border-radius: 12px !important;
-                padding: 14px 28px !important;
-                font-weight: 700 !important;
-                letter-spacing: 0.5px !important;
-                transition: all 0.3s ease;
-                box-shadow: 0 4px 20px rgba(255, 59, 59, 0.4) !important;
-                color: white !important;
-            }
-            
-            .btn-success:hover:not(:disabled) {
-                background: linear-gradient(135deg, #FF5555 0%, var(--rojo-peligro) 100%) !important;
-                transform: translateY(-3px);
-                box-shadow: 0 6px 30px rgba(255, 59, 59, 0.6) !important;
-            }
-            
-            .btn-success:disabled {
-                background: linear-gradient(135deg, var(--gris-oscuro) 0%, var(--negro-terciario) 100%) !important;
-                opacity: 0.5;
-                cursor: wait !important;
-                box-shadow: none !important;
-                animation: pulse-loading 1.5s ease-in-out infinite;
-            }
-            
-            /* Botón Descargar - Rojo oscuro */
-            .btn-info {
-                background: linear-gradient(135deg, var(--rojo-oscuro) 0%, #990000 100%) !important;
-                border: none !important;
-                border-radius: 12px !important;
-                padding: 14px 28px !important;
-                font-weight: 700 !important;
-                transition: all 0.3s ease;
-                box-shadow: 0 4px 20px rgba(204, 0, 0, 0.4) !important;
-                color: white !important;
-            }
-            
-            .btn-info:hover:not(:disabled) {
-                background: linear-gradient(135deg, #BB0000 0%, var(--rojo-oscuro) 100%) !important;
-                transform: translateY(-3px);
-                box-shadow: 0 6px 30px rgba(204, 0, 0, 0.6) !important;
-            }
-            
-            .btn-info:disabled {
-                background: linear-gradient(135deg, var(--gris-oscuro) 0%, var(--negro-terciario) 100%) !important;
-                opacity: 0.5;
-                cursor: wait !important;
-            }
-            
-            /* Botón Logout */
-            .btn-danger {
-                background: linear-gradient(135deg, var(--rojo-peligro) 0%, var(--rojo-oscuro) 100%) !important;
-                border: none !important;
-                border-radius: 8px !important;
-                transition: all 0.3s ease;
-                font-weight: 600 !important;
-            }
-            
-            /* Navbar oscuro */
+            /* NAVBAR PREMIUM */
             .navbar {
-                background: var(--negro-secundario) !important;
-                border-bottom: 2px solid var(--gris-oscuro);
-                box-shadow: 0 4px 20px rgba(255, 59, 59, 0.15);
+                background: rgba(26, 26, 46, 0.95) !important;
+                backdrop-filter: blur(10px);
+                border-bottom: 2px solid var(--border);
+                padding: 1rem 2rem !important;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
             }
             
             .navbar-brand {
                 font-weight: 800 !important;
-                font-size: 1.3rem !important;
-                letter-spacing: 0.5px !important;
-                color: var(--gris-texto) !important;
+                font-size: 1.4rem !important;
+                letter-spacing: -0.5px !important;
+                color: var(--text-primary) !important;
+                display: flex;
+                align-items: center;
+                gap: 12px;
             }
             
-            /* Labels con estilo rojo */
+            .navbar-brand img {
+                height: 45px;
+                filter: drop-shadow(0 2px 8px rgba(231, 76, 60, 0.3));
+                transition: transform 0.3s ease;
+            }
+            
+            .navbar-brand:hover img {
+                transform: scale(1.05);
+            }
+            
+            /* CARDS PREMIUM */
+            .card {
+                background: rgba(22, 33, 62, 0.8) !important;
+                border: 1px solid var(--border) !important;
+                border-radius: 16px !important;
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3) !important;
+                backdrop-filter: blur(10px);
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            
+            .card:hover {
+                border-color: var(--accent) !important;
+                box-shadow: 0 15px 50px rgba(231, 76, 60, 0.15) !important;
+                transform: translateY(-2px);
+            }
+            
+            .card-body {
+                padding: 2rem !important;
+            }
+            
+            /* INPUTS PROFESIONALES */
+            .form-control, .form-select {
+                background: rgba(15, 52, 96, 0.6) !important;
+                border: 1.5px solid var(--border) !important;
+                border-radius: 12px !important;
+                padding: 12px 16px !important;
+                color: var(--text-primary) !important;
+                transition: all 0.3s ease;
+                font-size: 0.95rem;
+            }
+            
+            .form-control:focus, .form-select:focus {
+                border-color: var(--accent) !important;
+                box-shadow: 0 0 0 4px rgba(231, 76, 60, 0.1) !important;
+                background: rgba(15, 52, 96, 0.8) !important;
+                color: var(--text-primary) !important;
+            }
+            
+            .form-control::placeholder {
+                color: var(--text-secondary);
+                opacity: 0.7;
+            }
+            
+            /* LABELS */
             label {
-                color: var(--rojo-peligro);
+                color: var(--accent);
                 font-weight: 700;
-                font-size: 0.8rem;
+                font-size: 0.85rem;
                 text-transform: uppercase;
                 letter-spacing: 0.8px;
-                margin-bottom: 8px;
+                margin-bottom: 10px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
             }
             
-            /* Alertas oscuras */
+            label i {
+                font-size: 1rem;
+                opacity: 0.9;
+            }
+            
+            /* BOTONES PREMIUM */
+            .btn {
+                border-radius: 12px !important;
+                padding: 12px 24px !important;
+                font-weight: 700 !important;
+                font-size: 0.95rem !important;
+                letter-spacing: 0.5px !important;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                border: none !important;
+                text-transform: uppercase;
+            }
+            
+            .btn-success {
+                background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%) !important;
+                color: white !important;
+                box-shadow: 0 6px 20px rgba(231, 76, 60, 0.3) !important;
+            }
+            
+            .btn-success:hover:not(:disabled) {
+                background: linear-gradient(135deg, var(--accent-light) 0%, var(--accent) 100%) !important;
+                transform: translateY(-3px);
+                box-shadow: 0 12px 30px rgba(231, 76, 60, 0.4) !important;
+            }
+            
+            .btn-success:disabled {
+                background: linear-gradient(135deg, var(--border) 0%, var(--text-secondary) 100%) !important;
+                opacity: 0.5;
+                cursor: not-allowed !important;
+                box-shadow: none !important;
+            }
+            
+            .btn-info {
+                background: linear-gradient(135deg, var(--accent-dark) 0%, #a93226 100%) !important;
+                color: white !important;
+                box-shadow: 0 6px 20px rgba(192, 57, 43, 0.3) !important;
+            }
+            
+            .btn-info:hover:not(:disabled) {
+                background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%) !important;
+                transform: translateY(-3px);
+                box-shadow: 0 12px 30px rgba(192, 57, 43, 0.4) !important;
+            }
+            
+            .btn-danger {
+                background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%) !important;
+                color: white !important;
+                border-radius: 10px !important;
+                padding: 8px 16px !important;
+                font-size: 0.9rem !important;
+            }
+            
+            .btn-danger:hover {
+                transform: scale(1.05);
+            }
+            
+            /* ALERTAS PROFESIONALES */
             .alert {
-                border-radius: 16px !important;
+                border-radius: 14px !important;
                 border: none !important;
                 padding: 24px !important;
-                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5) !important;
+                box-shadow: 0 6px 25px rgba(0, 0, 0, 0.2) !important;
+                backdrop-filter: blur(10px);
             }
             
             .alert-success {
-                background: linear-gradient(135deg, var(--negro-terciario) 0%, var(--gris-oscuro) 100%) !important;
-                border-left: 5px solid var(--rojo-peligro) !important;
-                color: var(--gris-texto) !important;
+                background: linear-gradient(135deg, rgba(39, 174, 96, 0.15) 0%, rgba(46, 204, 113, 0.1) 100%) !important;
+                border-left: 5px solid var(--success) !important;
+                color: var(--text-primary) !important;
             }
             
             .alert-danger {
-                background: linear-gradient(135deg, var(--negro-terciario) 0%, #2a0000 100%) !important;
-                border-left: 5px solid var(--rojo-peligro) !important;
-                color: var(--gris-texto) !important;
+                background: linear-gradient(135deg, rgba(231, 76, 60, 0.15) 0%, rgba(192, 57, 43, 0.1) 100%) !important;
+                border-left: 5px solid var(--accent) !important;
+                color: var(--text-primary) !important;
             }
             
             .alert-warning {
-                background: linear-gradient(135deg, var(--negro-terciario) 0%, #2a1a00 100%) !important;
-                border-left: 5px solid #FFA000 !important;
-                color: var(--gris-texto) !important;
+                background: linear-gradient(135deg, rgba(241, 196, 15, 0.15) 0%, rgba(230, 126, 34, 0.1) 100%) !important;
+                border-left: 5px solid #f39c12 !important;
+                color: var(--text-primary) !important;
             }
             
             .alert-light {
-                background: var(--negro-terciario) !important;
-                border-left: 5px solid var(--gris-medio) !important;
-                color: var(--gris-texto) !important;
+                background: rgba(236, 240, 241, 0.08) !important;
+                border-left: 5px solid var(--border) !important;
+                color: var(--text-primary) !important;
             }
             
-            /* Hr decorativo */
+            .alert-heading {
+                font-weight: 800 !important;
+                font-size: 1.1rem !important;
+                letter-spacing: -0.3px !important;
+            }
+            
+            /* SEPARADORES */
             hr {
-                border-top: 2px solid var(--gris-oscuro) !important;
+                border-top: 1px solid var(--border) !important;
                 opacity: 1;
-                margin: 24px 0 !important;
+                margin: 1.5rem 0 !important;
             }
             
-            /* Resumen de selección */
+            /* SECCIONES */
+            .section-title {
+                color: var(--text-primary);
+                font-weight: 800;
+                font-size: 1.2rem;
+                letter-spacing: -0.3px;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 1.5rem;
+            }
+            
+            .section-title i {
+                color: var(--accent);
+                font-size: 1.4rem;
+            }
+            
+            /* RESUMEN DE SELECCIÓN */
             .selection-summary {
-                background: var(--negro-terciario);
+                background: rgba(15, 52, 96, 0.6);
                 padding: 20px;
                 border-radius: 12px;
-                border-left: 5px solid var(--rojo-peligro);
-                color: var(--gris-texto);
+                border-left: 4px solid var(--accent);
+                color: var(--text-primary);
             }
             
-            /* Login container */
+            .summary-item {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 10px 0;
+                font-size: 0.95rem;
+            }
+            
+            .summary-item i {
+                color: var(--accent);
+                font-size: 1.1rem;
+                min-width: 20px;
+            }
+            
+            .summary-item strong {
+                color: var(--accent);
+                font-weight: 700;
+            }
+            
+            /* LOGIN CONTAINER */
             .login-container {
-                background: var(--negro-secundario);
+                background: rgba(22, 33, 62, 0.95);
+                backdrop-filter: blur(20px);
                 border-radius: 20px;
                 padding: 50px;
-                box-shadow: 0 25px 70px rgba(255, 59, 59, 0.3);
-                border: 2px solid var(--gris-medio);
+                box-shadow: 0 25px 70px rgba(231, 76, 60, 0.2);
+                border: 1px solid var(--border);
             }
             
-            /* Animación de rotación para el logo */
-            @keyframes logoRotation {
-                from { transform: rotateY(0deg); }
-                to { transform: rotateY(360deg); }
+            .login-title {
+                color: var(--text-primary);
+                font-weight: 900;
+                font-size: 2rem;
+                letter-spacing: -0.5px;
+                margin-bottom: 10px;
             }
             
-            .logo-rotation {
-                animation: logoRotation 4s linear infinite;
-                filter: drop-shadow(0 4px 10px rgba(255, 59, 59, 0.5));
+            .login-subtitle {
+                color: var(--text-secondary);
+                font-size: 0.95rem;
+                margin-bottom: 2rem;
             }
             
-            .logo-rotation:hover {
-                animation-duration: 1.5s;
-            }
-            
-            /* Animación de rotación para el icono de reloj */
-            @keyframes hourglassSpin {
-                0% { transform: rotateZ(0deg); }
-                50% { transform: rotateZ(180deg); }
-                100% { transform: rotateZ(360deg); }
-            }
-            
-            .hourglass-spin {
-                display: inline-block;
-                animation: hourglassSpin 2s linear infinite;
-            }
-            
-            /* Animación de pulso para botones en carga */
-            @keyframes pulse-loading {
-                0%, 100% { 
-                    opacity: 0.5;
-                    transform: scale(1);
-                }
-                50% { 
-                    opacity: 0.7;
-                    transform: scale(1.02);
-                }
-            }
-            
-            /* Animaciones generales */
+            /* ANIMACIONES */
             @keyframes fadeIn {
-                from { opacity: 0; transform: translateY(30px); }
-                to { opacity: 1; transform: translateY(0); }
+                from {
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            
+            @keyframes slideInLeft {
+                from {
+                    opacity: 0;
+                    transform: translateX(-30px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateX(0);
+                }
+            }
+            
+            @keyframes slideInRight {
+                from {
+                    opacity: 0;
+                    transform: translateX(30px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateX(0);
+                }
+            }
+            
+            @keyframes spin {
+                from { transform: rotate(0deg); }
+                to { transform: rotate(360deg); }
             }
             
             .animated {
-                animation: fadeIn 0.7s ease-out;
+                animation: fadeIn 0.6s ease-out;
             }
             
-            /* Scrollbar personalizado negro */
+            .slide-left {
+                animation: slideInLeft 0.6s ease-out;
+            }
+            
+            .slide-right {
+                animation: slideInRight 0.6s ease-out;
+            }
+            
+            .spin {
+                animation: spin 2s linear infinite;
+            }
+            
+            /* SCROLLBAR */
             ::-webkit-scrollbar {
-                width: 12px;
+                width: 10px;
             }
             
             ::-webkit-scrollbar-track {
-                background: var(--negro-principal);
+                background: var(--primary);
             }
             
             ::-webkit-scrollbar-thumb {
-                background: linear-gradient(135deg, var(--gris-oscuro) 0%, var(--gris-medio) 100%);
-                border-radius: 6px;
+                background: linear-gradient(135deg, var(--border) 0%, var(--accent) 100%);
+                border-radius: 5px;
             }
             
             ::-webkit-scrollbar-thumb:hover {
-                background: linear-gradient(135deg, var(--gris-medio) 0%, var(--rojo-oscuro) 100%);
+                background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
             }
             
-            /* Icono de éxito rojo */
-            .success-icon {
-                color: var(--rojo-peligro);
+            /* LAYOUT RESPONSIVE */
+            .main-container {
+                padding: 2rem;
+                min-height: 100vh;
             }
             
-            /* Panel de control header */
-            .panel-header {
-                color: var(--gris-texto) !important;
+            .control-panel {
+                animation: slideInLeft 0.7s ease-out;
             }
             
-            /* Sección de descarga */
-            .download-section {
-                background: var(--negro-terciario);
-                padding: 20px;
-                border-radius: 12px;
-                border: 2px dashed var(--rojo-peligro);
-                margin-top: 15px;
+            .result-panel {
+                animation: slideInRight 0.7s ease-out;
             }
             
-            /* Contact footer oscuro */
+            /* FOOTER CONTACTO */
             .contact-footer {
                 position: fixed;
-                bottom: 20px;
-                left: 20px;
-                background: var(--negro-secundario);
-                padding: 15px 20px;
+                bottom: 25px;
+                left: 25px;
+                background: rgba(26, 26, 46, 0.95);
+                backdrop-filter: blur(10px);
+                padding: 14px 22px;
                 border-radius: 12px;
-                border: 2px solid var(--gris-oscuro);
-                box-shadow: 0 4px 20px rgba(255, 59, 59, 0.2);
+                border: 1px solid var(--border);
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
                 z-index: 1000;
                 transition: all 0.3s ease;
+                display: flex;
+                gap: 16px;
             }
             
             .contact-footer:hover {
-                background: var(--negro-terciario);
+                background: rgba(22, 33, 62, 0.98);
+                border-color: var(--accent);
+                box-shadow: 0 12px 40px rgba(231, 76, 60, 0.2);
                 transform: translateY(-3px);
-                box-shadow: 0 6px 25px rgba(255, 59, 59, 0.4);
-                border-color: var(--rojo-peligro);
             }
             
             .contact-footer a {
-                color: var(--gris-texto);
+                color: var(--text-secondary);
                 text-decoration: none;
                 font-weight: 600;
-                font-size: 0.9rem;
+                font-size: 0.85rem;
                 transition: all 0.3s ease;
+                display: flex;
+                align-items: center;
+                gap: 6px;
             }
             
             .contact-footer a:hover {
-                color: var(--rojo-peligro);
+                color: var(--accent);
+            }
+            
+            /* ICONOS DE ÉXITO */
+            .success-icon {
+                color: var(--success);
+                font-size: 3rem;
+            }
+            
+            /* DESCARGA SECTION */
+            .download-section {
+                background: rgba(39, 174, 96, 0.1);
+                padding: 20px;
+                border-radius: 12px;
+                border: 2px dashed var(--success);
+                margin-top: 15px;
+            }
+            
+            /* RESPONSIVE */
+            @media (max-width: 768px) {
+                .main-container {
+                    padding: 1rem;
+                }
+                
+                .card-body {
+                    padding: 1.5rem !important;
+                }
+                
+                .login-container {
+                    padding: 30px;
+                }
+                
+                .login-title {
+                    font-size: 1.5rem;
+                }
+                
+                .contact-footer {
+                    flex-direction: column;
+                    width: calc(100% - 50px);
+                    left: 25px;
+                    right: 25px;
+                }
             }
         </style>
     </head>
@@ -368,7 +502,7 @@ VALID_USERS = {'admin': 'admin', 'usuario': 'admin'}
 
 def leer_sql(ruta):
     if not os.path.exists(ruta):
-        print(f"⚠️ ADVERTENCIA: La ruta del archivo SQL no existe: '{ruta}'")
+        print(f"⚠️  ADVERTENCIA: La ruta del archivo SQL no existe: '{ruta}'")
         return []
     with open(ruta, 'r', encoding='utf-8') as f:
         contenido = f.read()
@@ -402,15 +536,13 @@ except Exception as e:
 
 # ==================== LAYOUT DE LOGIN ====================
 login_layout = dbc.Container([
-    # Footer de contactos
     html.Div([
         html.A([
-            html.I(className="bi bi-globe2"),
+            html.I(className="bi bi-globe2 me-2"),
             "escuelar.org"
         ], href="https://escuelar.org/", target="_blank"),
-        html.Span(" | ", style={'color': '#FF3B3B', 'fontWeight': '700'}),
         html.A([
-            html.I(className="bi bi-linkedin"),
+            html.I(className="bi bi-linkedin me-2"),
             "LinkedIn"
         ], href="https://www.linkedin.com/company/escuelar/about/", target="_blank")
     ], className='contact-footer'),
@@ -421,42 +553,33 @@ login_layout = dbc.Container([
                 html.Div([
                     html.Img(
                         src='/assets/LOGO.png',
-                        className='logo-rotation',
-                        style={
-                            'width': '150px',
-                            'height': 'auto',
-                            'marginBottom': '20px'
-                        }
+                        style={'width': '120px', 'height': 'auto', 'marginBottom': '30px', 'filter': 'drop-shadow(0 4px 12px rgba(231, 76, 60, 0.3))'}
                     )
                 ], className='text-center'),
                 
-                html.H2("MAPA DE SUSCEPTIBILIDAD - PLATAFORMA DE ANÁLISIS", 
-                       className="text-center mb-4",
-                       style={
-                           'color': "#e0e0e0", 
-                           'fontWeight': '800',
-                           'fontSize': '1.8rem',
-                           'letterSpacing': '0.5px'
-                       }),
-                
                 dbc.Card([
                     dbc.CardBody([
+                        html.H1("Sistema de Susceptibilidad", className="login-title text-center"),
+                        html.P("Análisis de Peligros Geológicos", className="login-subtitle text-center"),
+                        
+                        html.Hr(style={'opacity': '0.3', 'margin': '2rem 0'}),
+                        
                         html.Div([
                             html.Label([
-                                html.I(className="bi bi-person-fill me-2"),
+                                html.I(className="bi bi-person-circle"),
                                 "Usuario"
                             ]),
                             dbc.Input(
                                 id='username-input',
                                 placeholder='Ingrese su usuario',
                                 type='text',
-                                className='mb-3'
+                                className='mb-4'
                             )
                         ]),
                         
                         html.Div([
                             html.Label([
-                                html.I(className="bi bi-lock-fill me-2"),
+                                html.I(className="bi bi-shield-lock"),
                                 "Contraseña"
                             ]),
                             dbc.Input(
@@ -474,23 +597,19 @@ login_layout = dbc.Container([
                         id='login-button',
                         color='success',
                         className='w-100 btn-success',
-                        style={'padding': '14px', 'fontSize': '1.1rem'}),
+                        style={'padding': '14px', 'fontSize': '1rem'}),
                         
                         html.Div(id='login-alert', className='mt-3')
                     ])
-                ], className='shadow-lg border-0 login-container')
+                ], className='login-container border-0')
             ], 
             className='animated',
-            style={
-                'marginTop': '80px',
-                'maxWidth': '480px',
-                'margin': '80px auto'
-            }),
+            style={'marginTop': '60px', 'maxWidth': '440px'}),
             width=12
         ),
         justify='center'
     )
-], fluid=True)
+], fluid=True, className="p-4")
 
 # ==================== LAYOUT DEL DASHBOARD ====================
 dashboard_layout = dbc.Container([
@@ -498,127 +617,105 @@ dashboard_layout = dbc.Container([
     dcc.Store(id='map-filepath-store', storage_type='memory'),
     dcc.Store(id='loading-state', storage_type='memory', data=False),
     
-    # Footer de contactos
     html.Div([
         html.A([
-            html.I(className="bi bi-globe2"),
+            html.I(className="bi bi-globe2 me-2"),
             "escuelar.org"
         ], href="https://escuelar.org/", target="_blank"),
-        html.Span(" | ", style={'color': '#FF3B3B', 'fontWeight': '700'}),
         html.A([
-            html.I(className="bi bi-linkedin"),
+            html.I(className="bi bi-linkedin me-2"),
             "LinkedIn"
         ], href="https://www.linkedin.com/company/escuelar/about/", target="_blank")
     ], className='contact-footer'),
     
-    # Navbar oscuro
     dbc.NavbarSimple(
         children=[
             dbc.NavItem(
-                html.Span(
-                    id='user-display-nav',
-                    className='navbar-text me-3',
-                    style={'color': '#e0e0e0', 'fontWeight': '600', 'fontSize': '1rem'}
-                )
+                html.Span(id='user-display-nav', style={'color': 'var(--text-primary)', 'fontWeight': '600', 'marginRight': '20px', 'display': 'flex', 'alignItems': 'center', 'gap': '8px'})
             ),
             dbc.NavItem(
                 dbc.Button([
                     html.I(className="bi bi-box-arrow-right me-2"),
                     "Cerrar Sesión"
-                ], 
-                id='logout-button',
-                color='danger',
-                size='sm',
-                className='btn-danger')
+                ], id='logout-button', color='danger', size='sm')
             )
         ],
         brand=[
-            html.Img(
-                src='/assets/LOGO.png',
-                className='navbar-logo',
-                style={'height': '40px', 'marginRight': '15px'}
-            ),
-            "⚠️ Sistema de Mapas de Susceptibilidad"
+            html.Img(src='/assets/LOGO.png', style={'height': '40px', 'marginRight': '15px'}),
+            html.Span("Sistema de Susceptibilidad")
         ],
         color="dark",
         dark=True,
-        className='mb-4 shadow-sm navbar',
-        style={'fontSize': '1.2rem'},
+        className='mb-4 navbar',
         fluid=True
     ),
     
     dbc.Row([
-        # Panel de control izquierdo
         dbc.Col([
             dbc.Card([
                 dbc.CardBody([
-                    html.Div([
-                        html.I(className="bi bi-exclamation-triangle me-2", style={'fontSize': '1.8rem', 'color': "#FF3B3B"}),
-                        html.H4("Panel de Control", className='panel-header', style={'display': 'inline', 'fontWeight': '900'})
-                    ], className='mb-4'),
+                    html.Div(className='section-title', children=[
+                        html.I(className="bi bi-sliders2-vertical"),
+                        'Parámetros de Análisis'
+                    ]),
                     
-                    dbc.Row([
-                        dbc.Col([
-                            html.Div([
-                                html.Label([
-                                    html.I(className="bi bi-person-badge me-2"),
-                                    "Nombre de Usuario"
-                                ]),
-                                dbc.Input(
-                                    id='user-name-input',
-                                    type='text',
-                                    placeholder='Ej: Daniel Porras Nuñez',
-                                    className='mb-4'
-                                )
-                            ]),
-                            
-                            html.Hr(),
-                            
-                            html.Div([
-                                html.Label([
-                                    html.I(className="bi bi-geo-alt me-2"),
-                                    "Departamento"
-                                ]),
-                                dcc.Dropdown(
-                                    id='departamento-dropdown',
-                                    options=LISTA_DEPARTAMENTOS,
-                                    placeholder='Seleccione departamento',
-                                    className='mb-4'
-                                )
-                            ]),
-                            
-                            html.Div([
-                                html.Label([
-                                    html.I(className="bi bi-building me-2"),
-                                    "Provincia"
-                                ]),
-                                dcc.Dropdown(
-                                    id='provincia-dropdown',
-                                    placeholder='Primero elija departamento',
-                                    disabled=True,
-                                    className='mb-4'
-                                )
-                            ]),
-                            
-                            html.Div([
-                                html.Label([
-                                    html.I(className="bi bi-house me-2"),
-                                    "Distrito"
-                                ]),
-                                dcc.Dropdown(
-                                    id='distrito-dropdown',
-                                    placeholder='Primero elija provincia',
-                                    disabled=True,
-                                    className='mb-4'
-                                )
-                            ])
-                        ], md=12)
+                    html.Div([
+                        html.Label([
+                            html.I(className="bi bi-person-check"),
+                            "Responsable del Análisis"
+                        ]),
+                        dbc.Input(
+                            id='user-name-input',
+                            type='text',
+                            placeholder='Nombre completo',
+                            className='mb-4'
+                        )
+                    ]),
+                    
+                    html.Hr(),
+                    
+                    html.Div([
+                        html.Label([
+                            html.I(className="bi bi-globe"),
+                            "Región / Departamento"
+                        ]),
+                        dcc.Dropdown(
+                            id='departamento-dropdown',
+                            options=LISTA_DEPARTAMENTOS,
+                            placeholder='Seleccione región',
+                            className='mb-4'
+                        )
+                    ]),
+                    
+                    html.Div([
+                        html.Label([
+                            html.I(className="bi bi-pin-map"),
+                            "Provincia"
+                        ]),
+                        dcc.Dropdown(
+                            id='provincia-dropdown',
+                            placeholder='Seleccione provincia',
+                            disabled=True,
+                            className='mb-4'
+                        )
+                    ]),
+                    
+                    html.Div([
+                        html.Label([
+                            html.I(className="bi bi-buildings"),
+                            "Distrito"
+                        ]),
+                        dcc.Dropdown(
+                            id='distrito-dropdown',
+                            placeholder='Seleccione distrito',
+                            disabled=True,
+                            className='mb-4'
+                        )
                     ])
                 ])
-            ], className='shadow-lg border-0 animated')
-        ], md=5, lg=4),
+            ], className='control-panel')
+        ], lg=4, className='mb-4 mb-lg-0'),
         
-        # Panel de resultados derecho
         dbc.Col([
             dbc.Card([
                 dbc.CardBody([
@@ -627,13 +724,10 @@ dashboard_layout = dbc.Container([
                         children=[
                             dbc.Alert([
                                 html.Div([
-                                    html.I(className="bi bi-hourglass-split hourglass-spin", 
-                                          style={'fontSize': '4rem', 'color': '#FF3B3B'}),
-                                ], className='text-center mb-3'),
-                                html.H4("Esperando Generación", className="alert-heading text-center", 
-                                       style={'fontWeight': '700'}),
-                                html.P("Configure los parámetros en el panel izquierdo y haga clic en 'Generar Mapa de Susceptibilidad' para comenzar.", 
-                                      className='text-center mb-0')
+                                    html.I(className="bi bi-map spin", style={'fontSize': '3rem', 'color': 'var(--accent)', 'marginBottom': '15px'})
+                                ], className='text-center'),
+                                html.H5("Generador de Mapas de Susceptibilidad", className="alert-heading text-center"),
+                                html.P("Configure los parámetros en el panel izquierdo y genere su mapa de análisis", className='text-center mb-0', style={'fontSize': '0.95rem', 'color': 'var(--text-secondary)'})
                             ], color="light", className='border-0 mb-4')
                         ],
                         className="result-panel"
@@ -642,54 +736,40 @@ dashboard_layout = dbc.Container([
                     html.Hr(),
                     
                     dbc.Row([
-                        # COLUMNA IZQUIERDA - Resumen de selección
                         dbc.Col([
-                            html.Div([
-                                html.H5([
-                                    html.I(className="bi bi-clipboard-check me-2", style={'color': '#FF3B3B'}),
-                                    "Resumen de Selección"
-                                ], className='mb-3', style={'fontWeight': '800'}),
-                                html.Div(
-                                    id='selection-summary',
-                                    children=[
-                                        dbc.Alert([
-                                            html.I(className="bi bi-info-circle me-2"),
-                                            "Complete todos los campos para continuar"
-                                        ], color="light", className='mb-0')
-                                    ],
-                                    className='selection-summary'
-                                )
-                            ])
-                        ], md=6, className='pe-2'),
+                            html.Div(className='section-title', style={'fontSize': '1rem', 'marginBottom': '1rem'}, children=[
+                                html.I(className="bi bi-clipboard-check"),
+                                'Resumen'
+                            ]),
+                            html.Div(
+                                id='selection-summary',
+                                children=[
+                                    dbc.Alert([
+                                        html.I(className="bi bi-info-circle me-2"),
+                                        "Complete los parámetros para continuar"
+                                    ], color="light", className='mb-0', style={'fontSize': '0.9rem'})
+                                ],
+                                className='selection-summary'
+                            )
+                        ], lg=5, className='mb-3 mb-lg-0'),
                         
-                        # COLUMNA DERECHA - Botones de acción
                         dbc.Col([
                             dbc.Button([
-                                html.I(className="bi bi-exclamation-triangle-fill me-2"),
-                                'Generar Mapa de Susceptibilidad'
-                            ],
-                            id='generate-map-button',
-                            color='success',
-                            size='lg',
-                            className='w-100 mb-3',
-                            disabled=True),
+                                html.I(className="bi bi-lightning-fill me-2"),
+                                'Generar Mapa'
+                            ], id='generate-map-button', color='success', className='w-100 mb-3 btn-success', disabled=True),
                             
                             dbc.Button([
                                 html.I(className="bi bi-download me-2"),
-                                'Descargar Mapa'
-                            ],
-                            id='download-button',
-                            color='info',
-                            size='lg',
-                            className='w-100 mb-3',
-                            disabled=True)
-                        ], md=6, className='ps-2')
-                    ], className='g-0')
+                                'Descargar'
+                            ], id='download-button', color='info', className='w-100 btn-info', disabled=True)
+                        ], lg=7)
+                    ], className='g-3')
                 ])
-            ], className="h-100 shadow-lg border-0 animated")
-        ], md=7, lg=8)
-    ], className='g-4')
-], fluid=True, className="p-4")
+            ], className="result-panel")
+        ], lg=8)
+    ], className='g-4', style={'marginBottom': '2rem'})
+], fluid=True, className="main-container")
 
 app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
@@ -715,7 +795,7 @@ def login_user(n_clicks, username, password):
     if not username or not password: 
         return {'logged_in': False}, dbc.Alert([
             html.I(className="bi bi-exclamation-triangle me-2"),
-            "Por favor, complete todos los campos"
+            "Complete todos los campos para continuar"
         ], color="warning")
     if username in VALID_USERS and VALID_USERS[username] == password: 
         return {'logged_in': True, 'username': username}, None
@@ -771,11 +851,9 @@ def enable_buttons(*values):
     loading_state = values[-1]
     form_values = values[:-1]
     
-    # Si está cargando, deshabilitar todos los botones
     if loading_state:
         return True, True
     
-    # Si no está cargando, habilitar según los valores del formulario
     all_filled = all(form_values)
     return not all_filled, not all_filled
 
@@ -787,30 +865,30 @@ def update_summary(user_name, departamento, provincia, distrito):
     if not any([user_name, departamento, provincia, distrito]): 
         return dbc.Alert([
             html.I(className="bi bi-info-circle me-2"),
-            "Complete todos los campos para continuar"
-        ], color="light", className='mb-0')
+            "Complete los parámetros para continuar"
+        ], color="light", className='mb-0', style={'fontSize': '0.9rem'})
     
     summary_items = []
-    if user_name: summary_items.append(html.Div([
-        html.I(className="bi bi-person-fill me-2", style={'color': '#FF3B3B'}),
-        html.Strong("Usuario: "),
-        user_name
-    ], className='mb-2'))
-    if departamento: summary_items.append(html.Div([
-        html.I(className="bi bi-geo-alt-fill me-2", style={'color': '#FF3B3B'}),
-        html.Strong("Departamento: "),
-        departamento
-    ], className='mb-2'))
-    if provincia: summary_items.append(html.Div([
-        html.I(className="bi bi-building me-2", style={'color': '#FF3B3B'}),
-        html.Strong("Provincia: "),
-        provincia
-    ], className='mb-2'))
-    if distrito: summary_items.append(html.Div([
-        html.I(className="bi bi-house-fill me-2", style={'color': '#FF3B3B'}),
-        html.Strong("Distrito: "),
-        distrito
-    ], className='mb-2'))
+    if user_name: 
+        summary_items.append(html.Div(className='summary-item', children=[
+            html.I(className="bi bi-person-fill"),
+            html.Span([html.Strong("Usuario:"), f" {user_name}"])
+        ]))
+    if departamento: 
+        summary_items.append(html.Div(className='summary-item', children=[
+            html.I(className="bi bi-geo-alt-fill"),
+            html.Span([html.Strong("Región:"), f" {departamento}"])
+        ]))
+    if provincia: 
+        summary_items.append(html.Div(className='summary-item', children=[
+            html.I(className="bi bi-pin-map-fill"),
+            html.Span([html.Strong("Provincia:"), f" {provincia}"])
+        ]))
+    if distrito: 
+        summary_items.append(html.Div(className='summary-item', children=[
+            html.I(className="bi bi-buildings"),
+            html.Span([html.Strong("Distrito:"), f" {distrito}"])
+        ]))
     
     return html.Div(summary_items)
 
@@ -821,13 +899,11 @@ def update_summary(user_name, departamento, provincia, distrito):
     prevent_initial_call=True
 )
 def activate_loading(n_clicks):
-    """Activa el estado de carga cuando se presiona el botón"""
     return True, [
-        html.I(className="bi bi-hourglass-split hourglass-spin me-2"),
+        html.I(className="bi bi-hourglass-split spin me-2"),
         'Procesando...'
     ]
 
-# Callback de generación con estado de carga
 @app.callback(
     Output('map-container', 'children'),
     Output('map-filepath-store', 'data'),
@@ -844,7 +920,7 @@ def generate_and_save_map_callback(n_clicks, user_name, departamento, provincia,
     ruta_guardado = None
     
     try:
-        print(f"\n⚠️ Generando mapa de susceptibilidad para {distrito}...")
+        print(f"\n⚠️  Generando mapa de susceptibilidad para {distrito}...")
         ruta_guardado = generar_mapa_peligro(user_name, departamento, provincia, distrito)
         
         if ruta_guardado and os.path.exists(ruta_guardado):
@@ -853,83 +929,69 @@ def generate_and_save_map_callback(n_clicks, user_name, departamento, provincia,
             success_alert = html.Div([
                 dbc.Alert([
                     html.Div([
-                        html.I(className="bi bi-check-circle-fill success-icon", style={'fontSize': '4rem'})
+                        html.I(className="bi bi-check-circle-fill success-icon")
                     ], className='text-center mb-3'),
-                    html.H4("¡Mapa de Susceptibilidad Generado Exitosamente!", 
-                           className="alert-heading text-center",
-                           style={'fontWeight': '800'}),
-                    html.Hr(),
+                    html.H5("¡Mapa Generado Exitosamente!", className="alert-heading text-center"),
+                    html.Hr(style={'opacity': '0.5'}),
                     html.Div([
-                        html.I(className="bi bi-file-earmark-image me-2", style={'color': '#FF3B3B'}),
-                        html.Strong("Archivo: "),
-                        html.Code(os.path.basename(ruta_guardado), 
-                                 style={'fontSize': '0.9em', 'background': 'var(--negro-terciario)', 
-                                       'padding': '4px 8px', 'borderRadius': '6px', 'color': '#e0e0e0'})
-                    ], className='mb-2'),
-                    html.Div([
-                        html.I(className="bi bi-hdd me-2", style={'color': '#FF3B3B'}),
-                        html.Strong("Tamaño: "),
-                        f"{file_size_mb:.2f} MB"
-                    ], className='mb-3'),
-                    html.Div([
-                        html.I(className="bi bi-info-circle me-2", style={'color': '#FF3B3B'}),
-                        html.Strong("Parámetros combinados: "),
-                        "Pendiente, Geomorfología, PP Máxima"
-                    ], className='mb-2'),
-                    html.Div([
-                        html.I(className="bi bi-bar-chart me-2", style={'color': '#FF3B3B'}),
-                        html.Strong("Clasificación: "),
-                        "Baja, Media, Alta, Muy Alta (Tabla XX)"
-                    ], className='mb-2'),
+                        html.Div(className='summary-item', children=[
+                            html.I(className="bi bi-file-earmark-image"),
+                            html.Span([html.Strong("Archivo:"), html.Code(os.path.basename(ruta_guardado), style={'fontSize': '0.85em', 'background': 'rgba(15, 52, 96, 0.8)', 'padding': '4px 8px', 'borderRadius': '6px'})])
+                        ]),
+                        html.Div(className='summary-item', children=[
+                            html.I(className="bi bi-hdd"),
+                            html.Span([html.Strong("Tamaño:"), f" {file_size_mb:.2f} MB"])
+                        ]),
+                        html.Div(className='summary-item', children=[
+                            html.I(className="bi bi-bar-chart"),
+                            html.Span([html.Strong("Parámetros:"), " Pendiente, Geomorfología, PP Máxima"])
+                        ]),
+                        html.Div(className='summary-item', children=[
+                            html.I(className="bi bi-graph-up"),
+                            html.Span([html.Strong("Clasificación:"), " Baja, Media, Alta, Muy Alta"])
+                        ])
+                    ], className='mt-3')
                 ], color="success", className='border-0 mb-3'),
                 
                 html.Div([
-                    html.H5([
-                        html.I(className="bi bi-arrow-down-circle-fill me-2", style={'color': '#FF3B3B'}),
-                        "Descargar Mapa"
-                    ], className='text-center mb-3', style={'fontWeight': '700'}),
-                    html.P("Haz clic en el botón 'Descargar Mapa' para obtener el archivo.",
-                          className='text-center mb-0', style={'fontSize': '0.95rem'})
+                    html.H6([
+                        html.I(className="bi bi-arrow-down-circle-fill me-2"),
+                        "Descarga tu archivo"
+                    ], className='text-center mb-2', style={'fontWeight': '700'}),
+                    html.P("Presiona el botón 'Descargar' para obtener el mapa", className='text-center mb-0', style={'fontSize': '0.9rem', 'color': 'var(--text-secondary)'})
                 ], className='download-section')
             ])
             
             button_text = [
-                html.I(className="bi bi-exclamation-triangle-fill me-2"),
-                'Generar Mapa de Susceptibilidad'
+                html.I(className="bi bi-lightning-fill me-2"),
+                'Generar Mapa'
             ]
             
-            print(f"\n✅ Retornando éxito al dashboard")
+            print(f"✅ Éxito")
             print(f"   Ruta: {ruta_guardado}")
             print(f"   Tamaño: {file_size_mb:.2f} MB")
             
             return success_alert, ruta_guardado, False, button_text
         else:
-            print(f"\n❌ El archivo no existe después de generarlo")
-            print(f"   Ruta esperada: {ruta_guardado}")
+            print(f"❌ El archivo no existe después de generarlo")
             
             error_alert = dbc.Alert([
                 html.Div([
-                    html.I(className="bi bi-exclamation-triangle-fill", style={'fontSize': '3rem', 'color': '#FFA000'})
-                ], className='text-center mb-3'),
-                html.H4("Error al Generar Mapa", className="alert-heading text-center", style={'fontWeight': '700'}),
-                html.Hr(),
-                html.P("No se pudo generar el mapa de susceptibilidad correctamente.", className='text-center'),
-                html.Div([
-                    html.Strong("Verifica:"),
-                    html.Ul([
-                        html.Li("Que existan los shapefiles de las 3 capas de peligro"),
-                        html.Li("PENDIENTE_PESO.shp con columna PESO_PENDI"),
-                        html.Li("geomorfo_cusco_peso.shp con columna PESO_GEOMO"),
-                        html.Li("CPE_TR_50_clasificado_PPMAX.shp con columna PESO_PPMAX"),
-                        html.Li("Que el distrito seleccionado tenga datos disponibles"),
-                        html.Li("Los logs en la terminal para más detalles")
-                    ])
-                ], className='mt-3')
-            ], color="danger", className='border-0')
+                    html.I(className="bi bi-exclamation-triangle-fill", style={'fontSize': '2.5rem', 'color': '#f39c12', 'marginBottom': '15px'})
+                ], className='text-center'),
+                html.H5("Error en la Generación", className="alert-heading text-center"),
+                html.Hr(style={'opacity': '0.5'}),
+                html.P("No se pudo generar el mapa correctamente. Verifica:", style={'fontSize': '0.95rem'}),
+                html.Ul([
+                    html.Li("Que existan los archivos de peligro (Pendiente, Geomorfología, PP)"),
+                    html.Li("Que el distrito tenga datos disponibles"),
+                    html.Li("Los logs en la terminal para más detalles")
+                ], style={'fontSize': '0.9rem'})
+            ], color="warning", className='border-0')
             
             button_text = [
-                html.I(className="bi bi-exclamation-triangle-fill me-2"),
-                'Generar Mapa de Susceptibilidad'
+                html.I(className="bi bi-lightning-fill me-2"),
+                'Generar Mapa'
             ]
             
             return error_alert, None, False, button_text
@@ -937,51 +999,39 @@ def generate_and_save_map_callback(n_clicks, user_name, departamento, provincia,
     except FileNotFoundError as e:
         error_alert = dbc.Alert([
             html.Div([
-                html.I(className="bi bi-file-excel-fill", style={'fontSize': '3rem', 'color': '#FFA000'})
-            ], className='text-center mb-3'),
-            html.H4("Archivo No Encontrado", className="alert-heading text-center", style={'fontWeight': '700'}),
-            html.Hr(),
-            html.P(f"No se pudo localizar el archivo necesario: {str(e)}", className='text-center'),
-            html.Div([
-                html.Strong("Ubicaciones esperadas:"),
-                html.Br(),
-                html.Code("PENDIENTE_PESO.shp: /workspaces/SIG-AUTOMATIZACION/PRUEBA/DATA/PELIGRO/PENDIENTE/",
-                         style={'background': 'var(--negro-terciario)', 'padding': '8px', 'borderRadius': '6px', 
-                               'display': 'block', 'marginBottom': '8px'}),
-                html.Code("geomorfo_cusco_peso.shp: /workspaces/SIG-AUTOMATIZACION/PRUEBA/DATA/PELIGRO/GEOMORFOLOGIA/",
-                         style={'background': 'var(--negro-terciario)', 'padding': '8px', 'borderRadius': '6px', 
-                               'display': 'block', 'marginBottom': '8px'}),
-                html.Code("CPE_TR_50_clasificado_PPMAX.shp: /workspaces/SIG-AUTOMATIZACION/PRUEBA/DATA/PELIGRO/PP_MAX/",
-                         style={'background': 'var(--negro-terciario)', 'padding': '8px', 'borderRadius': '6px', 
-                               'display': 'block'})
-            ], className='mt-3 text-center')
+                html.I(className="bi bi-file-excel-fill", style={'fontSize': '2.5rem', 'color': '#f39c12', 'marginBottom': '15px'})
+            ], className='text-center'),
+            html.H5("Archivo No Encontrado", className="alert-heading text-center"),
+            html.Hr(style={'opacity': '0.5'}),
+            html.P(f"Error: {str(e)}", style={'fontSize': '0.9rem'}),
+            html.P("Verifica las rutas de los archivos en la documentación", style={'fontSize': '0.85rem', 'color': 'var(--text-secondary)'})
         ], color="warning", className='border-0')
         
         button_text = [
-            html.I(className="bi bi-exclamation-triangle-fill me-2"),
-            'Generar Mapa de Peligro'
+            html.I(className="bi bi-lightning-fill me-2"),
+            'Generar Mapa'
         ]
         
         return error_alert, None, False, button_text
         
     except Exception as e:
-        print(f"❌ Excepción al generar mapa: {str(e)}")
+        print(f"❌ Error: {str(e)}")
         import traceback
         traceback.print_exc()
         
         error_alert = dbc.Alert([
             html.Div([
-                html.I(className="bi bi-x-octagon-fill", style={'fontSize': '3rem', 'color': '#C62828'})
-            ], className='text-center mb-3'),
-            html.H4("Error Inesperado", className="alert-heading text-center", style={'fontWeight': '700'}),
-            html.Hr(),
-            html.P(f"Ocurrió un error: {str(e)}", className='text-center'),
-            html.P("Revisa la consola para más detalles.", className='text-center mb-0')
+                html.I(className="bi bi-x-octagon-fill", style={'fontSize': '2.5rem', 'color': '#c0392b', 'marginBottom': '15px'})
+            ], className='text-center'),
+            html.H5("Error Inesperado", className="alert-heading text-center"),
+            html.Hr(style={'opacity': '0.5'}),
+            html.P(f"Ocurrió un error: {str(e)}", style={'fontSize': '0.9rem'}),
+            html.P("Consulta la terminal para más detalles", style={'fontSize': '0.85rem', 'color': 'var(--text-secondary)'})
         ], color="danger", className='border-0')
         
         button_text = [
-            html.I(className="bi bi-exclamation-triangle-fill me-2"),
-            'Generar Mapa de Peligro'
+            html.I(className="bi bi-lightning-fill me-2"),
+            'Generar Mapa'
         ]
         
         return error_alert, None, False, button_text
@@ -996,74 +1046,51 @@ def download_map(n_clicks, filepath):
     if not n_clicks or not filepath or not os.path.exists(filepath):
         return None
     try:
-        print(f"📥 Iniciando descarga de: {filepath}")
+        print(f"📥 Iniciando descarga: {filepath}")
         return dcc.send_file(filepath)
     except Exception as e:
-        print(f"❌ Error al descargar archivo: {e}")
+        print(f"❌ Error al descargar: {e}")
         return None
 
 if __name__ == '__main__':
     print(f"\n{'='*80}")
-    print("⚠️ VERIFICANDO ARCHIVOS DE PELIGRO".center(80))
+    print("🔍 VERIFICANDO ARCHIVOS DE PELIGRO".center(80))
     print(f"{'='*80}")
     
-    # Verificar estructura de carpetas
     ruta_base_pendiente = "/workspaces/SIG-AUTOMATIZACION/PRUEBA/DATA/PELIGRO/PENDIENTE"
     ruta_base_geomorfo = "/workspaces/SIG-AUTOMATIZACION/PRUEBA/DATA/PELIGRO/GEOMORFOLOGIA"
     ruta_base_ppmax = "/workspaces/SIG-AUTOMATIZACION/PRUEBA/DATA/PELIGRO/PP_MAX"
     
-    # Contar archivos de pendiente
     if os.path.exists(ruta_base_pendiente):
-        pendiente_files = []
-        for root, dirs, files in os.walk(ruta_base_pendiente):
-            pendiente_files.extend([f for f in files if f.endswith('.shp')])
-        print(f"✅ Carpeta PENDIENTE encontrada: {len(pendiente_files)} archivos .shp")
-        if pendiente_files:
-            print(f"   📋 Ejemplos: {', '.join(pendiente_files[:3])}")
+        pendiente_files = [f for r, d, files in os.walk(ruta_base_pendiente) for f in files if f.endswith('.shp')]
+        print(f"✅ PENDIENTE: {len(pendiente_files)} archivos")
     else:
-        print("❌ ADVERTENCIA: Carpeta PENDIENTE no encontrada")
+        print("⚠️  PENDIENTE: No encontrada")
     
-    # Contar archivos de geomorfología
     if os.path.exists(ruta_base_geomorfo):
-        geomorfo_files = []
-        for root, dirs, files in os.walk(ruta_base_geomorfo):
-            geomorfo_files.extend([f for f in files if f.endswith('.shp')])
-        print(f"✅ Carpeta GEOMORFOLOGÍA encontrada: {len(geomorfo_files)} archivos .shp")
-        if geomorfo_files:
-            print(f"   📋 Ejemplos: {', '.join(geomorfo_files[:3])}")
+        geomorfo_files = [f for r, d, files in os.walk(ruta_base_geomorfo) for f in files if f.endswith('.shp')]
+        print(f"✅ GEOMORFOLOGÍA: {len(geomorfo_files)} archivos")
     else:
-        print("❌ ADVERTENCIA: Carpeta GEOMORFOLOGÍA no encontrada")
+        print("⚠️  GEOMORFOLOGÍA: No encontrada")
     
-    # Contar archivos de PP Máxima
     if os.path.exists(ruta_base_ppmax):
-        ppmax_files = []
-        for root, dirs, files in os.walk(ruta_base_ppmax):
-            ppmax_files.extend([f for f in files if f.endswith('.shp')])
-        print(f"✅ Carpeta PP_MAX encontrada: {len(ppmax_files)} archivos .shp")
-        if ppmax_files:
-            print(f"   📋 Ejemplos: {', '.join(ppmax_files[:3])}")
+        ppmax_files = [f for r, d, files in os.walk(ruta_base_ppmax) for f in files if f.endswith('.shp')]
+        print(f"✅ PP_MAX: {len(ppmax_files)} archivos")
     else:
-        print("❌ ADVERTENCIA: Carpeta PP_MAX no encontrada")
+        print("⚠️  PP_MAX: No encontrada")
     
     print(f"{'='*80}\n")
     
     print(f"\n{'='*80}")
-    print("🚀 INICIANDO SERVIDOR DASH - MAPA DE SUSCEPTIBILIDAD".center(80))
+    print("🚀 DASHBOARD PROFESIONAL - SISTEMA DE SUSCEPTIBILIDAD".center(80))
     print(f"{'='*80}")
-    print("⚫ Tema: TOTALMENTE NEGRO")
-    print("⚠️ Paleta de colores: Rojo (Susceptibilidad)")
-    print("🎨 Interfaz oscura profesional")
-    print("⏳ Indicador de carga visual con animaciones")
-    print("📊 Combina: Pendiente + Geomorfología + PP Máxima")
-    print("🔢 Fórmula: SUSCEPTIBILIDAD = (PESO_PENDI + PESO_GEOMO + PESO_PPMAX) / 3")
-    print("🎯 Clasificación:")
-    print("   🟢 BAJA: 1.00 - 2.00")
-    print("   🟡 MEDIA: 2.00 - 3.00")
-    print("   🟠 ALTA: 3.00 - 4.00")
-    print("   🔴 MUY ALTA: 4.00 - 5.00")
-    print("🔍 Búsqueda inteligente de archivos por provincia/departamento")
+    print("🎨 Diseño: Moderno y Profesional")
+    print("🎯 Paleta: Gradientes Azul-Rojo con Efectos Glassmorphism")
+    print("✨ Animaciones: Suaves y Fluidas")
+    print("📊 Fórmula: (PENDIENTE + GEOMORFOLOGÍA + PP_MAX) / 3")
+    print("📈 Clasificación: Baja | Media | Alta | Muy Alta")
     print("🌐 Puerto: 8052")
-    print("🔗 URL: http://127.0.0.1:8052")
+    print("📍 URL: http://127.0.0.1:8052")
     print(f"{'='*80}\n")
     
     app.run(debug=True, port=8052)

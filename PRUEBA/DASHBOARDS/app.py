@@ -1,4 +1,4 @@
-# Archivo: app.py - VERSIÓN CON MAPA DE RÍOS INTEGRADO
+# Archivo: app.py - VERSIÓN CON INDICADOR DE CARGA VISUAL
 
 from dash import Dash, html, dcc, Input, Output, State
 import dash_bootstrap_components as dbc
@@ -13,7 +13,6 @@ from poblacion_final import generar_mapa_poblacion
 from vias_final import generar_mapa_vias
 from pendientes_final import generar_mapa_pendientes
 from geologia_final import generar_mapa_geologia
-from rios_final import generar_mapa_rios  # ← NUEVA IMPORTACIÓN
 
 # ==================== CONFIGURACIÓN DE LA APP ====================
 app = Dash(
@@ -634,8 +633,7 @@ dashboard_layout = dbc.Container([
                                         {'label': '📐 Mapa de pendientes', 'value': 'pendientes'},
                                         {'label': '🛣️ Mapa de vías', 'value': 'vias'},
                                         {'label': '🏘️ Mapa de centros poblados', 'value': 'centros'},
-                                        {'label': '🪨 Mapa de geología', 'value': 'geologia'},
-                                        {'label': '💧 Mapa de red hidrográfica', 'value': 'rios'}  # ← NUEVA OPCIÓN
+                                        {'label': '🪨 Mapa de geología', 'value': 'geologia'}
                                     ],
                                     placeholder='Seleccione el tipo de mapa',
                                     className='mb-4'
@@ -879,8 +877,7 @@ def update_summary(user_name, map_type, departamento, provincia, distrito):
         'pendientes': 'Pendientes',
         'vias': 'Vías',
         'centros': 'Centros Poblados',
-        'geologia': 'Mapa Geológico',
-        'rios': 'Red Hidrográfica'  # ← NUEVA ENTRADA
+        'geologia': 'Mapa Geológico'
     }
     
     summary_items = []
@@ -968,14 +965,6 @@ def generate_and_save_map_callback(n_clicks, user_name, map_type, departamento, 
         elif map_type == 'geologia':
             print(f"\n🪨 Generando mapa geológico para {distrito}...")
             ruta_guardado = generar_mapa_geologia(user_name, departamento, provincia, distrito)
-        elif map_type == 'rios':  # ← NUEVA CONDICIÓN
-            print(f"\n💧 Generando mapa de red hidrográfica para {distrito}...")
-            # Usar ruta predeterminada del DEM
-            ruta_dem = "/workspaces/SIG-AUTOMATIZACION/PRUEBA/DATA/PENDIENTES/DEM.tif"
-            if not os.path.exists(ruta_dem):
-                raise FileNotFoundError(f"Archivo DEM no encontrado: {ruta_dem}")
-            ruta_guardado = generar_mapa_rios(user_name, departamento, provincia, distrito, 
-                                              ruta_dem=ruta_dem, intensidad="media")
         
         if ruta_guardado and os.path.exists(ruta_guardado):
             file_size_mb = os.path.getsize(ruta_guardado) / (1024 * 1024)
@@ -1033,7 +1022,6 @@ def generate_and_save_map_callback(n_clicks, user_name, map_type, departamento, 
                         html.Li("Que el distrito seleccionado sea correcto"),
                         html.Li("Para pendientes: que exista pendientes.tif"),
                         html.Li("Para geología: que existan los shapefiles del departamento"),
-                        html.Li("Para ríos: que exista DEM.tif"),
                         html.Li("Los logs en la terminal para más detalles")
                     ])
                 ], className='mt-3')
@@ -1060,8 +1048,6 @@ def generate_and_save_map_callback(n_clicks, user_name, map_type, departamento, 
                 html.Code("Pendientes: /workspaces/SIG-AUTOMATIZACION/PRUEBA/DATA/PENDIENTES/pendientes.tif",
                          style={'background': '#FFF8E1', 'padding': '8px', 'borderRadius': '6px', 'display': 'block', 'marginBottom': '8px'}),
                 html.Code("Geología: /workspaces/SIG-AUTOMATIZACION/PRUEBA/DATA/GEOLOGIA/{DEPARTAMENTO}/geolo_{departamento}.shp",
-                         style={'background': '#FFF8E1', 'padding': '8px', 'borderRadius': '6px', 'display': 'block', 'marginBottom': '8px'}),
-                html.Code("DEM Ríos: /workspaces/SIG-AUTOMATIZACION/PRUEBA/DATA/PENDIENTES/DEM.tif",
                          style={'background': '#FFF8E1', 'padding': '8px', 'borderRadius': '6px', 'display': 'block'})
             ], className='mt-3 text-center')
         ], color="warning", className='border-0')
@@ -1157,17 +1143,6 @@ if __name__ == '__main__':
     print(f"{'='*80}\n")
     
     print(f"\n{'='*80}")
-    print("💧 VERIFICANDO ARCHIVO DEM PARA RÍOS".center(80))
-    print(f"{'='*80}")
-    
-    ruta_dem = "/workspaces/SIG-AUTOMATIZACION/PRUEBA/DATA/PENDIENTES/DEM.tif"
-    if os.path.exists(ruta_dem):
-        print(f"✅ Archivo DEM encontrado: {os.path.getsize(ruta_dem) / (1024*1024):.2f} MB")
-    else:
-        print("⚠️ ADVERTENCIA: Archivo DEM no encontrado")
-    print(f"{'='*80}\n")
-    
-    print(f"\n{'='*80}")
     print("🚀 INICIANDO SERVIDOR DASH - SISTEMA DE MAPAS GEOGRÁFICOS".center(80))
     print(f"{'='*80}")
     print("🌿 Paleta de colores: Verde")
@@ -1175,7 +1150,6 @@ if __name__ == '__main__':
     print("⏳ Indicador de carga visual con botones en gris")
     print("💎 Fondos transparentes plomizo-verdosos con glassmorphism")
     print("🪨 Mapa Geológico integrado")
-    print("💧 Mapa de Red Hidrográfica integrado")  # ← NUEVA LÍNEA
     print("🔄 Estados de carga: Botones cambian a gris durante el procesamiento")
     print("📌 Puerto: 8051")
     print("🌐 URL: http://127.0.0.1:8051")

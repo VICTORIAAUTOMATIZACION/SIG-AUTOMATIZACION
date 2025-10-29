@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""mapa_peligro.py - Generación de Mapa de Peligro combinando Pendiente, Geomorfología y PP Máxima"""
+"""mapa_peligro.py - Generación de Mapa de Peligro CORREGIDO"""
 
 import geopandas as gpd
 import matplotlib.pyplot as plt
@@ -19,21 +19,22 @@ import datetime
 ruta_base = "/workspaces/SIG-AUTOMATIZACION/PRUEBA"
 AMARILLO_CLARO = "#FFEE58"
 
-# RUTAS BASE DE LAS CAPAS DE PELIGRO (se construirán dinámicamente)
+# RUTAS BASE DE LAS CAPAS DE PELIGRO
 RUTA_BASE_PENDIENTE = f"{ruta_base}/DATA/PELIGRO/PENDIENTE"
 RUTA_BASE_GEOMORFOLOGIA = f"{ruta_base}/DATA/PELIGRO/GEOMORFOLOGIA"
 RUTA_BASE_PPMAX = f"{ruta_base}/DATA/PELIGRO/PP_MAX"
 
-# PALETA DE COLORES PARA NIVELES DE PELIGRO (según Tabla XX)
+# PALETA DE COLORES PARA NIVELES DE PELIGRO
 COLORES_PELIGRO = ['#00FF00', '#FFFF00', '#FFA500', '#FF0000']
 ETIQUETAS_PELIGRO = ['Baja', 'Media', 'Alta', 'Muy Alta']
 RANGOS_PELIGRO = [1.00, 2.00, 3.00, 4.00, 5.00]
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# FUNCIONES AUXILIARES (copiadas del código de referencia)
+# FUNCIONES AUXILIARES
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def add_north_arrow_blanco_completo(ax, xy_pos=(0.93, 0.08), size=0.06):
+    """Añade flecha norte al mapa"""
     x_pos, y_pos = xy_pos
     s = size / 2
     trans = ax.transAxes
@@ -55,13 +56,14 @@ def add_north_arrow_blanco_completo(ax, xy_pos=(0.93, 0.08), size=0.06):
     ])
     points_head_data = inv_trans.transform(trans.transform(points_head))
     
-    ax.add_patch(Polygon(points_body_data, facecolor='white', edgecolor='black', linewidth=1.5, zorder=11, transform=ax.transData))
-    ax.add_patch(Polygon(points_head_data, facecolor='white', edgecolor='black', linewidth=1.5, zorder=11, transform=ax.transData))
+    ax.add_patch(Polygon(points_body_data, facecolor='white', edgecolor='black', linewidth=1.5, zorder=11))
+    ax.add_patch(Polygon(points_head_data, facecolor='white', edgecolor='black', linewidth=1.5, zorder=11))
     ax.text(x_pos, y_pos + s * 1.5 + 0.015, "N", transform=ax.transAxes, fontsize=16, fontweight='bold', 
             ha='center', va='center', color='white', 
             path_effects=[path_effects.withStroke(linewidth=3, foreground='black')])
 
 def calculate_numeric_scale(ax, fig):
+    """Calcula escala numérica del mapa"""
     xlim = ax.get_xlim()
     ground_width_m = xlim[1] - xlim[0]
     fig_width_in = fig.get_size_inches()[0]
@@ -73,6 +75,7 @@ def calculate_numeric_scale(ax, fig):
     return f"1:{scale_rounded:,}"
 
 def add_membrete(ax, dpto, prov, dist, main_map_ax, fig_obj):
+    """Añade membrete con información del mapa"""
     escala_numerica = calculate_numeric_scale(main_map_ax, fig_obj)
     info = {
         "MAPA": f"MAPA DE SUSCEPTIBILIDAD: DISTRITO DE {dist.upper()}",
@@ -111,28 +114,24 @@ def add_membrete(ax, dpto, prov, dist, main_map_ax, fig_obj):
     ax.text(5 + padding, 1.0, "FECHA:", fontweight='bold', va='center', fontsize=8)
     ax.text(5 + padding, 0.5, info["FECHA"], va='center', fontsize=8)
 
-def buscar_shapefile(nombre_busqueda):
+def cargar_shapefile(nombre, alias):
+    """Carga un shapefile buscando recursivamente"""
     for root, _, files in os.walk(ruta_base):
         for file in files:
-            if file.lower().endswith(".shp") and nombre_busqueda.lower() in file.lower():
-                return os.path.join(root, file)
+            if file.lower().endswith(".shp") and nombre.lower() in file.lower():
+                path = os.path.join(root, file)
+                try:
+                    gdf = gpd.read_file(path)
+                    if gdf.crs is None or gdf.crs.to_epsg() != 4326:
+                        gdf.set_crs(epsg=4326, inplace=True)
+                    return gdf.to_crs(epsg=3857)
+                except Exception as e:
+                    print(f"   Error cargando {alias} desde {path}: {e}")
+    print(f"   No se encontró shapefile: {alias}")
     return None
 
-def cargar_shapefile(nombre, alias):
-    path = buscar_shapefile(nombre)
-    if not path:
-        print(f"   No se encontró shapefile: {alias}")
-        return None
-    try:
-        gdf = gpd.read_file(path)
-        if gdf.crs is None or gdf.crs.to_epsg() != 4326:
-            gdf.set_crs(epsg=4326, inplace=True)
-        return gdf.to_crs(epsg=3857)
-    except Exception as e:
-        print(f"   Error cargando {alias}: {e}")
-        return None
-
 def grillado_utm_proyectado(ax, bbox, ndiv=8):
+    """Añade grillado en coordenadas UTM"""
     x0, y0, x1, y1 = bbox
     
     for x in np.linspace(x0, x1, ndiv):
@@ -149,20 +148,11 @@ def grillado_utm_proyectado(ax, bbox, ndiv=8):
     
     ax.xaxis.set_major_formatter(FuncFormatter(fmt_este))
     ax.yaxis.set_major_formatter(FuncFormatter(fmt_norte))
-    ax.tick_params(axis='x', labelsize=7, width=0.5, length=3, direction="out", pad=2, 
-                   top=False, bottom=True, labeltop=False, labelbottom=True)
-    ax.tick_params(axis='y', labelsize=7, width=0.5, length=3, direction="out", pad=2, 
-                   left=True, right=False, labelleft=True, labelright=False)
-    
-    for label in ax.get_xticklabels() + ax.get_yticklabels():
-        label.set_fontsize(7)
-    
-    for label in ax.get_yticklabels():
-        label.set_rotation(90)
-        label.set_verticalalignment('center')
-        label.set_horizontalalignment('right')
+    ax.tick_params(axis='x', labelsize=7, width=0.5, length=3, direction="out", pad=2)
+    ax.tick_params(axis='y', labelsize=7, width=0.5, length=3, direction="out", pad=2)
 
 def grillado_grados_mejorado(ax, bbox, ndiv=5, decimales=2):
+    """Añade grillado en coordenadas geográficas"""
     transformer = pyproj.Transformer.from_crs(3857, 4326, always_xy=True)
     x0, y0, x1, y1 = bbox
     lon_start, lat_start = transformer.transform(x0, y0)
@@ -186,21 +176,13 @@ def grillado_grados_mejorado(ax, bbox, ndiv=5, decimales=2):
     
     ax.xaxis.set_major_formatter(FuncFormatter(fmt_lon))
     ax.yaxis.set_major_formatter(FuncFormatter(fmt_lat))
-    ax.tick_params(labelsize=6, width=0.4, length=2, direction="out", pad=2, 
-                   top=True, bottom=True, left=True, right=True, labeltop=True, labelright=False)
-    
-    for label in ax.get_xticklabels() + ax.get_yticklabels():
-        label.set_fontsize(6)
-    
-    for label in ax.get_yticklabels():
-        label.set_rotation(90)
-        label.set_verticalalignment('center')
-        label.set_horizontalalignment('right')
+    ax.tick_params(labelsize=6, width=0.4, length=2, direction="out", pad=2)
 
 def mapa_ubicacion(ax, gdf_base_map, gdf_context, gdf_focus, titulo, etiqueta, tipo_mapa, 
                    gdf_dpto_sel=None, gdf_prov_sel=None, col_prov=None, col_dpto=None, 
-                   departamento_sel=None, provincia_sel=None, gdf_departamentos=None, 
-                   gdf_provincias=None, gdf_oceano=None):
+                   provincia_sel=None, gdf_departamentos=None, gdf_provincias=None, 
+                   gdf_oceano=None):
+    """Genera mapas de ubicación contextual"""
     
     is_focus_valid = not gdf_focus.empty and all(np.isfinite(gdf_focus.total_bounds))
     
@@ -226,25 +208,28 @@ def mapa_ubicacion(ax, gdf_base_map, gdf_context, gdf_focus, titulo, etiqueta, t
     cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
     bbox = (cx - S / 2, cy - S / 2, cx + S / 2, cy + S / 2)
     
-    if gdf_oceano is not None:
-        gdf_oceano.clip(box(*bbox)).plot(ax=ax, color="#A4D4FF", edgecolor="none", zorder=2)
+    if gdf_oceano is not None and not gdf_oceano.empty:
+        try:
+            gdf_oceano.clip(box(*bbox)).plot(ax=ax, color="#A4D4FF", edgecolor="none", zorder=2)
+        except:
+            pass
     
     if tipo_mapa == "pais":
-        if gdf_base_map is not None:
+        if gdf_base_map is not None and not gdf_base_map.empty:
             gdf_base_map.plot(ax=ax, color="#f0eee8", edgecolor="black", linewidth=0.4, zorder=1)
-        if gdf_context is not None:
+        if gdf_context is not None and not gdf_context.empty:
             gdf_context.plot(ax=ax, color=AMARILLO_CLARO, edgecolor="black", linewidth=0.7, zorder=3)
     elif tipo_mapa == "provincia":
-        if gdf_base_map is not None:
+        if gdf_base_map is not None and not gdf_base_map.empty:
             gdf_base_map.plot(ax=ax, color="#f0eee8", edgecolor="black", linewidth=0.4, zorder=1)
-        if gdf_context is not None:
+        if gdf_context is not None and not gdf_context.empty:
             gdf_context.plot(ax=ax, color=AMARILLO_CLARO, edgecolor="black", linewidth=0.7, zorder=3)
     elif tipo_mapa == "distrito":
-        if gdf_provincias is not None:
+        if gdf_provincias is not None and not gdf_provincias.empty:
             gdf_provincias[gdf_provincias[col_prov] != provincia_sel].plot(
                 ax=ax, color='lightgray', edgecolor='darkgray', linewidth=0.4, zorder=2)
             gdf_prov_sel.plot(ax=ax, color=AMARILLO_CLARO, edgecolor='black', linewidth=0.7, zorder=3)
-        if gdf_context is not None:
+        if gdf_context is not None and not gdf_context.empty:
             gdf_context.plot(ax=ax, facecolor='none', edgecolor="gray", linewidth=0.4, zorder=4)
     
     if is_focus_valid:
@@ -270,108 +255,58 @@ def mapa_ubicacion(ax, gdf_base_map, gdf_context, gdf_focus, titulo, etiqueta, t
 
 def buscar_archivo_peligro(ruta_base, patron_busqueda, tipo_capa):
     """
-    Busca archivos de peligro de forma inteligente.
-    Puede buscar por provincia, departamento o archivo único.
+    ✅ FUNCIÓN CORREGIDA: Busca archivos de peligro de forma inteligente
     """
-    print(f"   🔍 Buscando {tipo_capa} en: {ruta_base}")
+    print(f"   🔍 Buscando {tipo_capa} con patrón '{patron_busqueda}' en: {ruta_base}")
     
-    # Lista de archivos encontrados
     archivos_encontrados = []
     
-    # Buscar recursivamente en todas las subcarpetas
-    for root, dirs, files in os.walk(ruta_base):
-        for file in files:
-            if file.lower().endswith('.shp') and patron_busqueda.lower() in file.lower():
-                ruta_completa = os.path.join(root, file)
-                archivos_encontrados.append(ruta_completa)
-                print(f"      ✅ Encontrado: {ruta_completa}")
-    
-    if not archivos_encontrados:
-        print(f"      ❌ No se encontraron archivos para {tipo_capa}")
+    if not os.path.exists(ruta_base):
+        print(f"      ❌ La ruta base no existe: {ruta_base}")
         return None
     
-    # Si hay múltiples archivos, tomar el primero (o se puede implementar lógica más compleja)
-    if len(archivos_encontrados) > 1:
-        print(f"      ⚠️ Se encontraron {len(archivos_encontrados)} archivos, usando el primero")
-    
-    return archivos_encontrados[0]
-    """Asigna color según el nivel de peligro"""
-    for i in range(len(RANGOS_PELIGRO) - 1):
-        if RANGOS_PELIGRO[i] <= valor < RANGOS_PELIGRO[i + 1]:
-            return COLORES_PELIGRO[i]
-    return COLORES_PELIGRO[-1]
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# FUNCIÓN PRINCIPAL DE GENERACIÓN DE MAPA DE PELIGRO
-# ═══════════════════════════════════════════════════════════════════════════════
-
-def generar_mapa_peligro(nombre_usuario, departamento_sel, provincia_sel, distrito_sel):
-    print("\n" + "="*80)
-    print("🗺️ INICIANDO PROCESO DE GENERACIÓN DE MAPA DE PELIGRO...")
-    print(f"   - Usuario: {nombre_usuario}")
-    print(f"   - Ubicación: {distrito_sel}, {provincia_sel}, {departamento_sel}")
-
-    # CREAR CARPETA DE SALIDA
     try:
-        carpeta_usuario = os.path.join(ruta_base, "USUARIOS", nombre_usuario)
-        carpeta_salida = os.path.join(carpeta_usuario, "MAPA DE PELIGRO")
-        os.makedirs(carpeta_salida, exist_ok=True)
-        print(f"   - Carpeta de salida verificada: {carpeta_salida}")
+        for root, dirs, files in os.walk(ruta_base):
+            for file in files:
+                if file.lower().endswith('.shp'):
+                    # Búsqueda más flexible: el patrón puede estar en cualquier parte del nombre
+                    if patron_busqueda.lower() in file.lower():
+                        ruta_completa = os.path.join(root, file)
+                        archivos_encontrados.append(ruta_completa)
+                        print(f"      ✅ Encontrado: {ruta_completa}")
     except Exception as e:
-        print(f"❌ Error creando la estructura de carpetas para el usuario: {e}")
+        print(f"      ❌ Error durante la búsqueda: {e}")
         return None
-
-def buscar_archivo_peligro(ruta_base, patron_busqueda, tipo_capa):
-    """
-    Busca archivos de peligro de forma inteligente.
-    Puede buscar por provincia, departamento o archivo único.
-    """
-    print(f"   🔍 Buscando {tipo_capa} en: {ruta_base}")
-    
-    # Lista de archivos encontrados
-    archivos_encontrados = []
-    
-    # Buscar recursivamente en todas las subcarpetas
-    for root, dirs, files in os.walk(ruta_base):
-        for file in files:
-            if file.lower().endswith('.shp') and patron_busqueda.lower() in file.lower():
-                ruta_completa = os.path.join(root, file)
-                archivos_encontrados.append(ruta_completa)
-                print(f"      ✅ Encontrado: {ruta_completa}")
     
     if not archivos_encontrados:
-        print(f"      ❌ No se encontraron archivos para {tipo_capa}")
+        print(f"      ❌ No se encontraron archivos para {tipo_capa} con patrón '{patron_busqueda}'")
         return None
     
-    # Si hay múltiples archivos, tomar el primero (o se puede implementar lógica más compleja)
     if len(archivos_encontrados) > 1:
-        print(f"      ⚠️ Se encontraron {len(archivos_encontrados)} archivos, usando el primero")
+        print(f"      ⚠️ Se encontraron {len(archivos_encontrados)} archivos, usando: {archivos_encontrados[0]}")
     
     return archivos_encontrados[0]
 
 def asignar_color_peligro(valor):
     """
-    Asigna color según el nivel de peligro
-    Clasificación según Tabla XX. Rangos de la Susceptibilidad ante deslizamientos:
-    - BAJA: 1.00 ≤ S < 2.00 → Verde
-    - MEDIA: 2.00 ≤ S < 3.00 → Amarillo
-    - ALTA: 3.00 ≤ S < 4.00 → Naranja
-    - MUY ALTA: 4.00 ≤ S ≤ 5.00 → Rojo
+    ✅ FUNCIÓN CORREGIDA: Asigna color según nivel de peligro
     """
-    if 1.00 <= valor < 2.00:
-        return COLORES_PELIGRO[0]  # Verde - BAJA
-    elif 2.00 <= valor < 3.00:
-        return COLORES_PELIGRO[1]  # Amarillo - MEDIA
-    elif 3.00 <= valor < 4.00:
-        return COLORES_PELIGRO[2]  # Naranja - ALTA
-    elif 4.00 <= valor <= 5.00:
-        return COLORES_PELIGRO[3]  # Rojo - MUY ALTA
-    else:
-        # Por defecto, si está fuera de rango, asignar verde
+    try:
+        valor_float = float(valor)
+    except (TypeError, ValueError):
         return COLORES_PELIGRO[0]
+    
+    if valor_float < 2.00:
+        return COLORES_PELIGRO[0]  # Verde - BAJA
+    elif valor_float < 3.00:
+        return COLORES_PELIGRO[1]  # Amarillo - MEDIA
+    elif valor_float < 4.00:
+        return COLORES_PELIGRO[2]  # Naranja - ALTA
+    else:
+        return COLORES_PELIGRO[3]  # Rojo - MUY ALTA
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# FUNCIÓN PRINCIPAL DE GENERACIÓN DE MAPA DE PELIGRO
+# FUNCIÓN PRINCIPAL - VERSIÓN CORREGIDA
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def generar_mapa_peligro(nombre_usuario, departamento_sel, provincia_sel, distrito_sel):
@@ -387,78 +322,78 @@ def generar_mapa_peligro(nombre_usuario, departamento_sel, provincia_sel, distri
         os.makedirs(carpeta_salida, exist_ok=True)
         print(f"   - Carpeta de salida verificada: {carpeta_salida}")
     except Exception as e:
-        print(f"❌ Error creando la estructura de carpetas para el usuario: {e}")
+        print(f"❌ Error creando estructura de carpetas: {e}")
         return None
 
     print("\n📦 Cargando capas de peligro...")
     
-    # BUSCAR Y CARGAR LAS TRES CAPAS DE PELIGRO DE FORMA INTELIGENTE
+    # ✅ BÚSQUEDA MEJORADA: Intentar múltiples patrones
     try:
-        # Buscar archivo de pendiente (puede estar en subcarpeta por provincia)
-        print(f"\n   🔍 Buscando capa de PENDIENTE para {provincia_sel}...")
+        print(f"\n   🔍 Buscando capa de PENDIENTE...")
         ruta_pendiente = buscar_archivo_peligro(RUTA_BASE_PENDIENTE, provincia_sel, "PENDIENTE")
         if not ruta_pendiente:
-            # Intentar buscar por departamento
-            print(f"   🔍 Intentando buscar por departamento: {departamento_sel}...")
-            ruta_pendiente = buscar_archivo_peligro(RUTA_BASE_PENDIENTE, departamento_sel, "PENDIENTE")
+            ruta_pendiente = buscar_archivo_peligro(RUTA_BASE_PENDIENTE, "pendiente", "PENDIENTE")
         if not ruta_pendiente:
-            # Buscar cualquier archivo con "peso" en el nombre
-            print(f"   🔍 Buscando cualquier archivo de pendiente con peso...")
             ruta_pendiente = buscar_archivo_peligro(RUTA_BASE_PENDIENTE, "peso", "PENDIENTE")
         
         if not ruta_pendiente:
-            raise FileNotFoundError(f"No se encontró archivo de PENDIENTE para {provincia_sel} o {departamento_sel}")
+            raise FileNotFoundError(f"No se encontró archivo de PENDIENTE")
         
-        print(f"   📂 Cargando: {ruta_pendiente}")
         gdf_pendiente = gpd.read_file(ruta_pendiente)
+        if gdf_pendiente.crs is None:
+            gdf_pendiente.set_crs(epsg=4326, inplace=True)
+        gdf_pendiente = gdf_pendiente.to_crs(epsg=3857)
         print(f"      ✅ Pendiente cargada: {len(gdf_pendiente)} registros")
         print(f"      📋 Columnas: {list(gdf_pendiente.columns)}")
         
-        # Buscar archivo de geomorfología
-        print(f"\n   🔍 Buscando capa de GEOMORFOLOGÍA para {departamento_sel}...")
+        # Validar columna PESO_PENDI
+        if 'PESO_PENDI' not in gdf_pendiente.columns:
+            print(f"      ⚠️ Columna 'PESO_PENDI' no encontrada. Columnas disponibles: {list(gdf_pendiente.columns)}")
+            raise ValueError("Columna 'PESO_PENDI' no existe en pendiente")
+        
+        print(f"\n   🔍 Buscando capa de GEOMORFOLOGÍA...")
         ruta_geomorfo = buscar_archivo_peligro(RUTA_BASE_GEOMORFOLOGIA, departamento_sel.lower(), "GEOMORFOLOGÍA")
         if not ruta_geomorfo:
-            # Buscar cualquier archivo con "peso" en el nombre
-            print(f"   🔍 Buscando cualquier archivo de geomorfología con peso...")
+            ruta_geomorfo = buscar_archivo_peligro(RUTA_BASE_GEOMORFOLOGIA, "geomorfo", "GEOMORFOLOGÍA")
+        if not ruta_geomorfo:
             ruta_geomorfo = buscar_archivo_peligro(RUTA_BASE_GEOMORFOLOGIA, "peso", "GEOMORFOLOGÍA")
         
         if not ruta_geomorfo:
-            raise FileNotFoundError(f"No se encontró archivo de GEOMORFOLOGÍA para {departamento_sel}")
+            raise FileNotFoundError(f"No se encontró archivo de GEOMORFOLOGÍA")
         
-        print(f"   📂 Cargando: {ruta_geomorfo}")
         gdf_geomorfo = gpd.read_file(ruta_geomorfo)
+        if gdf_geomorfo.crs is None:
+            gdf_geomorfo.set_crs(epsg=4326, inplace=True)
+        gdf_geomorfo = gdf_geomorfo.to_crs(epsg=3857)
         print(f"      ✅ Geomorfología cargada: {len(gdf_geomorfo)} registros")
         print(f"      📋 Columnas: {list(gdf_geomorfo.columns)}")
         
-        # Buscar archivo de PP Máxima
+        if 'PESO_GEOMO' not in gdf_geomorfo.columns:
+            print(f"      ⚠️ Columna 'PESO_GEOMO' no encontrada")
+            raise ValueError("Columna 'PESO_GEOMO' no existe en geomorfología")
+        
         print(f"\n   🔍 Buscando capa de PP MÁXIMA...")
         ruta_ppmax = buscar_archivo_peligro(RUTA_BASE_PPMAX, "ppmax", "PP MÁXIMA")
+        if not ruta_ppmax:
+            ruta_ppmax = buscar_archivo_peligro(RUTA_BASE_PPMAX, "pp_max", "PP MÁXIMA")
         if not ruta_ppmax:
             ruta_ppmax = buscar_archivo_peligro(RUTA_BASE_PPMAX, "peso", "PP MÁXIMA")
         
         if not ruta_ppmax:
             raise FileNotFoundError(f"No se encontró archivo de PP MÁXIMA")
         
-        print(f"   📂 Cargando: {ruta_ppmax}")
         gdf_ppmax = gpd.read_file(ruta_ppmax)
+        if gdf_ppmax.crs is None:
+            gdf_ppmax.set_crs(epsg=4326, inplace=True)
+        gdf_ppmax = gdf_ppmax.to_crs(epsg=3857)
         print(f"      ✅ PP Máxima cargada: {len(gdf_ppmax)} registros")
         print(f"      📋 Columnas: {list(gdf_ppmax.columns)}")
         
-        # Verificar que existan las columnas de peso
-        if 'PESO_PENDI' not in gdf_pendiente.columns:
-            raise ValueError(f"La columna 'PESO_PENDI' no existe. Columnas disponibles: {list(gdf_pendiente.columns)}")
-        if 'PESO_GEOMO' not in gdf_geomorfo.columns:
-            raise ValueError(f"La columna 'PESO_GEOMO' no existe. Columnas disponibles: {list(gdf_geomorfo.columns)}")
         if 'PESO_PPMAX' not in gdf_ppmax.columns:
-            raise ValueError(f"La columna 'PESO_PPMAX' no existe. Columnas disponibles: {list(gdf_ppmax.columns)}")
+            print(f"      ⚠️ Columna 'PESO_PPMAX' no encontrada")
+            raise ValueError("Columna 'PESO_PPMAX' no existe en PP Máxima")
         
-        print(f"\n   🔄 Convirtiendo a CRS 3857...")
-        # Convertir a CRS 3857
-        gdf_pendiente = gdf_pendiente.to_crs(epsg=3857)
-        gdf_geomorfo = gdf_geomorfo.to_crs(epsg=3857)
-        gdf_ppmax = gdf_ppmax.to_crs(epsg=3857)
-        
-        print(f"   ✅ Todas las capas cargadas y reproyectadas exitosamente")
+        print(f"\n   ✅ Todas las capas cargadas y reproyectadas exitosamente")
         
     except Exception as e:
         print(f"\n❌ Error cargando capas de peligro: {e}")
@@ -471,7 +406,6 @@ def generar_mapa_peligro(nombre_usuario, departamento_sel, provincia_sel, distri
     gdf_provincias = cargar_shapefile("provincia", "Provincias")
     gdf_distritos = cargar_shapefile("distrito", "Distritos del Perú")
 
-    # CARGAR PAÍSES Y OCÉANO
     try:
         gdf_paises = gpd.read_file(f"{ruta_base}/DATA/MAPA DE UBICACION/PAISES DE SUDAMERICA/Sudamérica.shp").to_crs(3857)
         gdf_oceano = gpd.read_file(f"{ruta_base}/DATA/MAPA DE UBICACION/OCEANO/Océano.shp").to_crs(3857)
@@ -481,7 +415,7 @@ def generar_mapa_peligro(nombre_usuario, departamento_sel, provincia_sel, distri
         gdf_oceano = None
 
     if gdf_departamentos is None or gdf_provincias is None or gdf_distritos is None:
-        print("❌ Faltan capas base (departamento, provincia o distrito). Abortando.")
+        print("❌ Faltan capas base. Abortando.")
         return None
 
     col_dpto = next((c for c in ['NOMBDEP', 'DEPARTAMEN'] if c in gdf_departamentos.columns), None)
@@ -489,10 +423,10 @@ def generar_mapa_peligro(nombre_usuario, departamento_sel, provincia_sel, distri
     col_distr = next((c for c in ['NOMBDIST', 'DISTRITO'] if c in gdf_distritos.columns), None)
 
     if not all([col_dpto, col_prov, col_distr]):
-        print("❌ No se pudieron identificar las columnas de nombres en los shapefiles")
+        print("❌ No se pudieron identificar columnas de nombres")
         return None
 
-    print("\n🔍 Filtrando datos del área seleccionada...")
+    print("\n🔍 Filtrando datos...")
     gdf_dpto_sel = gdf_departamentos[gdf_departamentos[col_dpto] == departamento_sel]
     gdf_prov_sel = gdf_provincias[gdf_provincias[col_prov] == provincia_sel]
     gdf_distrito = gdf_distritos[(gdf_distritos[col_distr] == distrito_sel) & 
@@ -500,46 +434,83 @@ def generar_mapa_peligro(nombre_usuario, departamento_sel, provincia_sel, distri
     gdf_distritos_en_provincia = gdf_distritos[gdf_distritos[col_prov] == provincia_sel]
 
     if gdf_distrito.empty:
-        print(f"❌ Error: No se pudo encontrar la geometría para el distrito '{distrito_sel}'.")
+        print(f"❌ Error: No se encontró geometría para '{distrito_sel}'")
         return None
 
-    print(f"   ✅ Distrito encontrado con geometría válida")
+    print(f"   ✅ Distrito encontrado")
 
-    # RECORTAR CAPAS DE PELIGRO AL DISTRITO
+    # ✅ RECORTE MEJORADO CON MANEJO DE ERRORES
     print("\n✂️ Recortando capas de peligro al distrito...")
     try:
-        gdf_pendiente_clip = gpd.clip(gdf_pendiente, gdf_distrito)
-        gdf_geomorfo_clip = gpd.clip(gdf_geomorfo, gdf_distrito)
-        gdf_ppmax_clip = gpd.clip(gdf_ppmax, gdf_distrito)
+        # Validar geometrías antes de recortar
+        gdf_distrito_valid = gdf_distrito[gdf_distrito.geometry.is_valid]
+        gdf_pendiente_valid = gdf_pendiente[gdf_pendiente.geometry.is_valid]
+        gdf_geomorfo_valid = gdf_geomorfo[gdf_geomorfo.geometry.is_valid]
+        gdf_ppmax_valid = gdf_ppmax[gdf_ppmax.geometry.is_valid]
+        
+        gdf_pendiente_clip = gpd.clip(gdf_pendiente_valid, gdf_distrito_valid)
+        gdf_geomorfo_clip = gpd.clip(gdf_geomorfo_valid, gdf_distrito_valid)
+        gdf_ppmax_clip = gpd.clip(gdf_ppmax_valid, gdf_distrito_valid)
         
         print(f"   ✅ Capas recortadas exitosamente")
         print(f"      - Pendiente: {len(gdf_pendiente_clip)} registros")
         print(f"      - Geomorfología: {len(gdf_geomorfo_clip)} registros")
         print(f"      - PP Máxima: {len(gdf_ppmax_clip)} registros")
         
+        if gdf_pendiente_clip.empty or gdf_geomorfo_clip.empty or gdf_ppmax_clip.empty:
+            print("⚠️ Advertencia: al menos una capa recortada está vacía")
+        
     except Exception as e:
         print(f"❌ Error recortando capas: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
-    # COMBINAR LAS TRES CAPAS MEDIANTE INTERSECCIÓN
+    # ✅ COMBINACIÓN MEJORADA CON VALIDACIÓN
     print("\n🔄 Combinando capas de peligro...")
     try:
-        # Intersección de las tres capas
-        gdf_intersect1 = gpd.overlay(gdf_pendiente_clip, gdf_geomorfo_clip, how='intersection')
-        gdf_peligro = gpd.overlay(gdf_intersect1, gdf_ppmax_clip, how='intersection')
+        if gdf_pendiente_clip.empty or gdf_geomorfo_clip.empty or gdf_ppmax_clip.empty:
+            print("❌ Error: No hay datos suficientes después del recorte")
+            return None
         
-        # Calcular el índice de peligro (promedio de los tres pesos)
+        # Intersección espacial paso a paso
+        print("   🔗 Intersectando pendiente + geomorfología...")
+        gdf_intersect1 = gpd.overlay(gdf_pendiente_clip, gdf_geomorfo_clip, how='intersection')
+        print(f"      Resultado: {len(gdf_intersect1)} polígonos")
+        
+        if gdf_intersect1.empty:
+            print("❌ Error: La intersección pendiente+geomorfología está vacía")
+            return None
+        
+        print("   🔗 Intersectando resultado + PP Máxima...")
+        gdf_peligro = gpd.overlay(gdf_intersect1, gdf_ppmax_clip, how='intersection')
+        print(f"      Resultado: {len(gdf_peligro)} polígonos")
+        
+        if gdf_peligro.empty:
+            print("❌ Error: La intersección final está vacía")
+            return None
+        
+        # ✅ CÁLCULO DE ÍNDICE DE PELIGRO CON VALIDACIÓN
+        print("\n   📊 Calculando índice de peligro...")
+        
+        # Verificar y convertir columnas a numéricas
+        for col in ['PESO_PENDI', 'PESO_GEOMO', 'PESO_PPMAX']:
+            if col in gdf_peligro.columns:
+                gdf_peligro[col] = pd.to_numeric(gdf_peligro[col], errors='coerce')
+                print(f"      - {col}: min={gdf_peligro[col].min()}, max={gdf_peligro[col].max()}")
+        
+        # Calcular peligro: promedio de los tres pesos
         gdf_peligro['PELIGRO'] = (
-            gdf_peligro['PESO_PENDI'] + 
-            gdf_peligro['PESO_GEOMO'] + 
-            gdf_peligro['PESO_PPMAX']
+            gdf_peligro['PESO_PENDI'].fillna(1.0) + 
+            gdf_peligro['PESO_GEOMO'].fillna(1.0) + 
+            gdf_peligro['PESO_PPMAX'].fillna(1.0)
         ) / 3
         
-        # Asignar colores según el nivel de peligro
+        # Asignar colores
         gdf_peligro['COLOR'] = gdf_peligro['PELIGRO'].apply(asignar_color_peligro)
         
-        print(f"   ✅ Capas combinadas exitosamente: {len(gdf_peligro)} polígonos")
-        print(f"   📊 Rango de peligro: {gdf_peligro['PELIGRO'].min():.3f} - {gdf_peligro['PELIGRO'].max():.3f}")
+        print(f"   ✅ Capas combinadas: {len(gdf_peligro)} polígonos")
+        print(f"   📊 Rango PELIGRO: {gdf_peligro['PELIGRO'].min():.3f} - {gdf_peligro['PELIGRO'].max():.3f}")
         
     except Exception as e:
         print(f"❌ Error combinando capas: {e}")
@@ -547,178 +518,183 @@ def generar_mapa_peligro(nombre_usuario, departamento_sel, provincia_sel, distri
         traceback.print_exc()
         return None
 
+    # ✅ GENERACIÓN DEL MAPA
     print("\n🎨 Generando layout del mapa...")
-    fig = plt.figure(figsize=(14, 9.9))
-    grid = plt.GridSpec(1, 2, width_ratios=[3.0, 1], wspace=0.05)
-    gs_izquierda = grid[0, 0].subgridspec(3, 1, height_ratios=[0.08, 3.5, 0.42], hspace=0.08)
-
-    ax_titulo = fig.add_subplot(gs_izquierda[0])
-    ax_titulo.text(0.5, 0.5, f"MAPA DE SUSCEPTIBILIDAD ANTE DESLIZAMIENTOS - DISTRITO DE {distrito_sel.upper()}",
-                   ha='center', va='center', fontsize=11, fontweight="normal",
-                   bbox=dict(boxstyle='square,pad=0.5', facecolor='white', 
-                            edgecolor='black', linewidth=1.5, alpha=0.95))
-    ax_titulo.axis('off')
-
-    ax_main = fig.add_subplot(gs_izquierda[1])
-
-    # CÁLCULO DE BBOX
-    minx, miny, maxx, maxy = gdf_distrito.total_bounds
-    buffer_factor = 0.15
-    buffer_x = (maxx - minx) * buffer_factor
-    buffer_y = (maxy - miny) * buffer_factor
-    bbox_temp = (minx - buffer_x, miny - buffer_y, maxx + buffer_x, maxy + buffer_y)
-    
-    # AJUSTE DE ASPECTO RATIO
-    aspect_ratio_objetivo = 1.21
-    cx, cy = (bbox_temp[0] + bbox_temp[2]) / 2, (bbox_temp[1] + bbox_temp[3]) / 2
-    ancho_actual, alto_actual = bbox_temp[2] - bbox_temp[0], bbox_temp[3] - bbox_temp[1]
-    
-    if (ancho_actual / alto_actual) > aspect_ratio_objetivo:
-        nuevo_alto = ancho_actual / aspect_ratio_objetivo
-        bbox_main = (bbox_temp[0], cy - nuevo_alto/2, bbox_temp[2], cy + nuevo_alto/2)
-    else:
-        nuevo_ancho = alto_actual * aspect_ratio_objetivo
-        bbox_main = (cx - nuevo_ancho/2, bbox_temp[1], cx + nuevo_ancho/2, bbox_temp[3])
-
-    ax_main.set_xlim(bbox_main[0], bbox_main[2])
-    ax_main.set_ylim(bbox_main[1], bbox_main[3])
-    ax_main.set_aspect('equal', adjustable='box')
-
-    print("   📡 Descargando imagen satelital...")
     try:
-        ctx.add_basemap(ax_main, source=ctx.providers.Esri.WorldImagery, attribution=False, zoom='auto')
-    except Exception as e:
-        print(f"   ⚠️ No se pudo cargar el mapa base: {e}")
-        ax_main.set_facecolor("#e8e8e8")
+        import pandas as pd
+        
+        fig = plt.figure(figsize=(14, 9.9))
+        grid = plt.GridSpec(1, 2, width_ratios=[3.0, 1], wspace=0.05)
+        gs_izquierda = grid[0, 0].subgridspec(3, 1, height_ratios=[0.08, 3.5, 0.42], hspace=0.08)
 
-    # VISUALIZAR CAPA DE PELIGRO
-    print("   🎨 Renderizando mapa de peligro...")
-    gdf_peligro.plot(ax=ax_main, color=gdf_peligro['COLOR'], edgecolor='black', 
-                     linewidth=0.2, alpha=0.7, zorder=4)
-    
-    # LÍMITE DISTRITAL
-    gdf_distrito.plot(ax=ax_main, facecolor="none", edgecolor="black", 
-                     linewidth=1.5, linestyle='-', alpha=1.0, zorder=15)
+        ax_titulo = fig.add_subplot(gs_izquierda[0])
+        ax_titulo.text(0.5, 0.5, f"MAPA DE SUSCEPTIBILIDAD ANTE DESLIZAMIENTOS - DISTRITO DE {distrito_sel.upper()}",
+                       ha='center', va='center', fontsize=11, fontweight="normal",
+                       bbox=dict(boxstyle='square,pad=0.5', facecolor='white', 
+                                edgecolor='black', linewidth=1.5, alpha=0.95))
+        ax_titulo.axis('off')
 
-    grillado_utm_proyectado(ax_main, bbox_main, ndiv=8)
-    add_north_arrow_blanco_completo(ax_main, xy_pos=(0.93, 0.08), size=0.06)
-    ax_main.add_artist(ScaleBar(1, units="m", location="lower left", 
-                                box_alpha=0.6, border_pad=0.5, scale_loc='bottom'))
+        ax_main = fig.add_subplot(gs_izquierda[1])
 
-    # MEMBRETE Y LEYENDA
-    gs_memb_ley = gs_izquierda[2].subgridspec(1, 2, wspace=0.1)
-    ax_membrete = fig.add_subplot(gs_memb_ley[0])
-    fig.canvas.draw()
-    add_membrete(ax_membrete, departamento_sel, provincia_sel, distrito_sel, ax_main, fig)
+        # CÁLCULO DE BBOX
+        minx, miny, maxx, maxy = gdf_distrito.total_bounds
+        buffer_factor = 0.15
+        buffer_x = (maxx - minx) * buffer_factor
+        buffer_y = (maxy - miny) * buffer_factor
+        bbox_temp = (minx - buffer_x, miny - buffer_y, maxx + buffer_x, maxy + buffer_y)
+        
+        # AJUSTE DE ASPECTO RATIO
+        aspect_ratio_objetivo = 1.21
+        cx, cy = (bbox_temp[0] + bbox_temp[2]) / 2, (bbox_temp[1] + bbox_temp[3]) / 2
+        ancho_actual, alto_actual = bbox_temp[2] - bbox_temp[0], bbox_temp[3] - bbox_temp[1]
+        
+        if (ancho_actual / alto_actual) > aspect_ratio_objetivo:
+            nuevo_alto = ancho_actual / aspect_ratio_objetivo
+            bbox_main = (bbox_temp[0], cy - nuevo_alto/2, bbox_temp[2], cy + nuevo_alto/2)
+        else:
+            nuevo_ancho = alto_actual * aspect_ratio_objetivo
+            bbox_main = (cx - nuevo_ancho/2, bbox_temp[1], cx + nuevo_ancho/2, bbox_temp[3])
 
-    ax_leyenda = fig.add_subplot(gs_memb_ley[1])
-    ax_leyenda.axis('off')
+        ax_main.set_xlim(bbox_main[0], bbox_main[2])
+        ax_main.set_ylim(bbox_main[1], bbox_main[3])
+        ax_main.set_aspect('equal', adjustable='box')
 
-    legend_elements = [Patch(facecolor='white', edgecolor='white', label='SUSCEPTIBILIDAD:', linewidth=0)]
-    
-    # Agregar los 4 niveles de susceptibilidad con sus rangos
-    legend_elements.extend([
-        Patch(facecolor=COLORES_PELIGRO[0], edgecolor='black', label='Baja (1.00 - 2.00)'),
-        Patch(facecolor=COLORES_PELIGRO[1], edgecolor='black', label='Media (2.00 - 3.00)'),
-        Patch(facecolor=COLORES_PELIGRO[2], edgecolor='black', label='Alta (3.00 - 4.00)'),
-        Patch(facecolor=COLORES_PELIGRO[3], edgecolor='black', label='Muy Alta (4.00 - 5.00)')
-    ])
+        print("   📡 Descargando imagen satelital...")
+        try:
+            ctx.add_basemap(ax_main, source=ctx.providers.Esri.WorldImagery, attribution=False, zoom='auto')
+        except Exception as e:
+            print(f"   ⚠️ No se pudo cargar mapa base: {e}")
+            ax_main.set_facecolor("#e8e8e8")
 
-    legend_elements.extend([
-        Patch(facecolor='white', edgecolor='white', label='', linewidth=0),
-        Patch(facecolor='white', edgecolor='white', label='PARÁMETROS:', linewidth=0),
-        Patch(facecolor='white', edgecolor='white', label='• Pendiente', linewidth=0),
-        Patch(facecolor='white', edgecolor='white', label='• Geomorfología', linewidth=0),
-        Patch(facecolor='white', edgecolor='white', label='• PP Máxima', linewidth=0),
-        Patch(facecolor='white', edgecolor='white', label='', linewidth=0),
-        Line2D([0], [0], color='black', lw=1.5, linestyle='-', label='Límite Distrital')
-    ])
+        # VISUALIZAR CAPA DE PELIGRO
+        print("   🎨 Renderizando mapa de peligro...")
+        gdf_peligro.plot(ax=ax_main, color=gdf_peligro['COLOR'], edgecolor='black', 
+                         linewidth=0.2, alpha=0.7, zorder=4)
+        
+        # LÍMITE DISTRITAL
+        gdf_distrito.plot(ax=ax_main, facecolor="none", edgecolor="black", 
+                         linewidth=1.5, linestyle='-', alpha=1.0, zorder=15)
 
-    leg = ax_leyenda.legend(handles=legend_elements, loc='center', ncol=1, frameon=True, fontsize=7,
-                           title="LEYENDA", title_fontproperties={'size': 10, 'weight': 'bold'},
-                           handletextpad=0.5, columnspacing=1.0, borderpad=0.7, handlelength=1.5)
-    leg.get_title().set_ha('center')
-    leg.get_frame().set_edgecolor('black')
-    leg.get_frame().set_linewidth(1.2)
+        grillado_utm_proyectado(ax_main, bbox_main, ndiv=8)
+        add_north_arrow_blanco_completo(ax_main, xy_pos=(0.93, 0.08), size=0.06)
+        ax_main.add_artist(ScaleBar(1, units="m", location="lower left", 
+                                    box_alpha=0.6, border_pad=0.5, scale_loc='bottom'))
 
-    print("   🗺️ Generando mapas de ubicación...")
-    gs_ubicaciones = grid[0, 1].subgridspec(3, 1, height_ratios=[1, 1, 1], hspace=0.15)
-    ax_depto = fig.add_subplot(gs_ubicaciones[0])
-    ax_prov = fig.add_subplot(gs_ubicaciones[1])
-    ax_dist = fig.add_subplot(gs_ubicaciones[2])
+        # MEMBRETE Y LEYENDA
+        gs_memb_ley = gs_izquierda[2].subgridspec(1, 2, wspace=0.1)
+        ax_membrete = fig.add_subplot(gs_memb_ley[0])
+        fig.canvas.draw()
+        add_membrete(ax_membrete, departamento_sel, provincia_sel, distrito_sel, ax_main, fig)
 
-    mapa_ubicacion(ax_depto, gdf_paises, gdf_departamentos, gdf_dpto_sel,
-                   f"DEPARTAMENTO DE\n{departamento_sel.upper()}", departamento_sel,
-                   tipo_mapa="pais", gdf_departamentos=gdf_departamentos, gdf_oceano=gdf_oceano)
+        ax_leyenda = fig.add_subplot(gs_memb_ley[1])
+        ax_leyenda.axis('off')
 
-    mapa_ubicacion(ax_prov, gdf_departamentos, gdf_dpto_sel, gdf_prov_sel,
-                   f"PROVINCIA DE\n{provincia_sel.upper()}", provincia_sel,
-                   tipo_mapa="provincia", gdf_dpto_sel=gdf_dpto_sel, 
-                   departamento_sel=departamento_sel, col_dpto=col_dpto, 
-                   gdf_departamentos=gdf_departamentos, gdf_oceano=gdf_oceano)
+        legend_elements = [Patch(facecolor='white', edgecolor='white', label='SUSCEPTIBILIDAD:', linewidth=0)]
+        legend_elements.extend([
+            Patch(facecolor=COLORES_PELIGRO[0], edgecolor='black', label='Baja (1.00 - 2.00)'),
+            Patch(facecolor=COLORES_PELIGRO[1], edgecolor='black', label='Media (2.00 - 3.00)'),
+            Patch(facecolor=COLORES_PELIGRO[2], edgecolor='black', label='Alta (3.00 - 4.00)'),
+            Patch(facecolor=COLORES_PELIGRO[3], edgecolor='black', label='Muy Alta (4.00 - 5.00)')
+        ])
+        legend_elements.extend([
+            Patch(facecolor='white', edgecolor='white', label='', linewidth=0),
+            Patch(facecolor='white', edgecolor='white', label='PARÁMETROS:', linewidth=0),
+            Patch(facecolor='white', edgecolor='white', label='• Pendiente', linewidth=0),
+            Patch(facecolor='white', edgecolor='white', label='• Geomorfología', linewidth=0),
+            Patch(facecolor='white', edgecolor='white', label='• PP Máxima', linewidth=0),
+            Patch(facecolor='white', edgecolor='white', label='', linewidth=0),
+            Line2D([0], [0], color='black', lw=1.5, linestyle='-', label='Límite Distrital')
+        ])
 
-    mapa_ubicacion(ax_dist, gdf_prov_sel, gdf_distritos_en_provincia, gdf_distrito,
-                   f"DISTRITO DE\n{distrito_sel.upper()}", distrito_sel,
-                   tipo_mapa="distrito", gdf_prov_sel=gdf_prov_sel, 
-                   provincia_sel=provincia_sel, col_prov=col_prov, 
-                   gdf_provincias=gdf_provincias, gdf_oceano=gdf_oceano)
+        leg = ax_leyenda.legend(handles=legend_elements, loc='center', ncol=1, frameon=True, fontsize=7,
+                               title="LEYENDA", title_fontproperties={'size': 10, 'weight': 'bold'},
+                               handletextpad=0.5, columnspacing=1.0, borderpad=0.7, handlelength=1.5)
+        leg.get_title().set_ha('center')
+        leg.get_frame().set_edgecolor('black')
+        leg.get_frame().set_linewidth(1.2)
 
-    plt.subplots_adjust(top=0.98, bottom=0.02, left=0.02, right=0.98, hspace=0.2, wspace=0.05)
+        print("   🗺️ Generando mapas de ubicación...")
+        gs_ubicaciones = grid[0, 1].subgridspec(3, 1, height_ratios=[1, 1, 1], hspace=0.15)
+        ax_depto = fig.add_subplot(gs_ubicaciones[0])
+        ax_prov = fig.add_subplot(gs_ubicaciones[1])
+        ax_dist = fig.add_subplot(gs_ubicaciones[2])
 
-    rect_frame = fig.add_axes([0, 0, 1, 1], frameon=False)
-    rect_frame.set_xticks([])
-    rect_frame.set_yticks([])
-    rect_frame.patch.set_visible(False)
+        try:
+            mapa_ubicacion(ax_depto, gdf_paises, gdf_departamentos, gdf_dpto_sel,
+                           f"DEPARTAMENTO DE\n{departamento_sel.upper()}", departamento_sel,
+                           tipo_mapa="pais", gdf_departamentos=gdf_departamentos, gdf_oceano=gdf_oceano)
+        except Exception as e:
+            print(f"      ⚠️ Error en mapa de departamento: {e}")
 
-    for spine in rect_frame.spines.values():
-        spine.set_visible(True)
-        spine.set_linewidth(2)
-        spine.set_color('black')
+        try:
+            mapa_ubicacion(ax_prov, gdf_departamentos, gdf_dpto_sel, gdf_prov_sel,
+                           f"PROVINCIA DE\n{provincia_sel.upper()}", provincia_sel,
+                           tipo_mapa="provincia", gdf_dpto_sel=gdf_dpto_sel, 
+                           departamento_sel=departamento_sel, col_dpto=col_dpto, 
+                           gdf_departamentos=gdf_departamentos, gdf_oceano=gdf_oceano)
+        except Exception as e:
+            print(f"      ⚠️ Error en mapa de provincia: {e}")
 
-    print("\n💾 Guardando mapa final en carpeta de usuario...")
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    nombre_base = f"MAPA_PELIGRO_{distrito_sel.replace(' ', '_')}_{timestamp}.png"
-    ruta_guardado_final = os.path.join(carpeta_salida, nombre_base)
+        try:
+            mapa_ubicacion(ax_dist, gdf_prov_sel, gdf_distritos_en_provincia, gdf_distrito,
+                           f"DISTRITO DE\n{distrito_sel.upper()}", distrito_sel,
+                           tipo_mapa="distrito", gdf_prov_sel=gdf_prov_sel, 
+                           provincia_sel=provincia_sel, col_prov=col_prov, 
+                           gdf_provincias=gdf_provincias, gdf_oceano=gdf_oceano)
+        except Exception as e:
+            print(f"      ⚠️ Error en mapa de distrito: {e}")
 
-    try:
+        plt.subplots_adjust(top=0.98, bottom=0.02, left=0.02, right=0.98, hspace=0.2, wspace=0.05)
+
+        rect_frame = fig.add_axes([0, 0, 1, 1], frameon=False)
+        rect_frame.set_xticks([])
+        rect_frame.set_yticks([])
+        rect_frame.patch.set_visible(False)
+
+        for spine in rect_frame.spines.values():
+            spine.set_visible(True)
+            spine.set_linewidth(2)
+            spine.set_color('black')
+
+        print("\n💾 Guardando mapa final...")
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        nombre_base = f"MAPA_PELIGRO_{distrito_sel.replace(' ', '_')}_{timestamp}.png"
+        ruta_guardado_final = os.path.join(carpeta_salida, nombre_base)
+
         plt.savefig(ruta_guardado_final, dpi=300, bbox_inches='tight', pad_inches=0.01)
         plt.close(fig)
 
         if os.path.exists(ruta_guardado_final):
             file_size = os.path.getsize(ruta_guardado_final) / (1024 * 1024)
-            print(f"✅ Mapa de peligro guardado exitosamente")
+            print(f"✅ Mapa guardado exitosamente")
             print(f"   📂 Ubicación: {ruta_guardado_final}")
             print(f"   📊 Tamaño: {file_size:.2f} MB")
             print("="*80 + "\n")
             return ruta_guardado_final
         else:
-            print("❌ El archivo no se guardó correctamente")
+            print("❌ Error al guardar el archivo")
             return None
 
     except Exception as e:
-        print(f"❌ Error al guardar el archivo: {e}")
+        print(f"❌ Error generando mapa: {e}")
         import traceback
         traceback.print_exc()
         plt.close(fig)
         return None
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# EJEMPLO DE USO
-# ═══════════════════════════════════════════════════════════════════════════════
-
 if __name__ == "__main__":
-    # Parámetros de ejemplo - ajustar según tu caso
+    import pandas as pd
+    
     NOMBRE_USUARIO = "USUARIO_TEST"
     DEPARTAMENTO = "CUSCO"
-    PROVINCIA = "CUSCO"
-    DISTRITO = "CUSCO"
+    PROVINCIA = "ANTA"
+    DISTRITO = "HUAROCONDO"
     
-    # Generar el mapa
     ruta_mapa = generar_mapa_peligro(NOMBRE_USUARIO, DEPARTAMENTO, PROVINCIA, DISTRITO)
     
     if ruta_mapa:
-        print(f"\n🎉 ¡Proceso completado exitosamente!")
-        print(f"📍 El mapa ha sido guardado en: {ruta_mapa}")
+        print(f"🎉 ¡Proceso completado exitosamente!")
+        print(f"📍 Mapa guardado en: {ruta_mapa}")
     else:
-        print("\n❌ El proceso falló. Revisa los mensajes de error anteriores.")
+        print("❌ El proceso falló.")
