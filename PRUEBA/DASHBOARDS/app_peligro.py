@@ -559,7 +559,7 @@ login_layout = dbc.Container([
                 
                 dbc.Card([
                     dbc.CardBody([
-                        html.H1("Comprension del riesgo", className="login-title text-center"),
+                        html.H1("Sistema de Susceptibilidad", className="login-title text-center"),
                         html.P("Análisis de Peligros Geológicos", className="login-subtitle text-center"),
                         
                         html.Hr(style={'opacity': '0.3', 'margin': '2rem 0'}),
@@ -642,7 +642,7 @@ dashboard_layout = dbc.Container([
         ],
         brand=[
             html.Img(src='/assets/LOGO.png', style={'height': '40px', 'marginRight': '15px'}),
-            html.Span("Comprension del riesgo")
+            html.Span("Sistema de Susceptibilidad")
         ],
         color="dark",
         dark=True,
@@ -1082,7 +1082,7 @@ if __name__ == '__main__':
     print(f"{'='*80}\n")
     
     print(f"\n{'='*80}")
-    print("🚀 DASHBOARD PROFESIONAL - Comprension del riesgo".center(80))
+    print("🚀 DASHBOARD PROFESIONAL - SISTEMA DE SUSCEPTIBILIDAD".center(80))
     print(f"{'='*80}")
     print("🎨 Diseño: Moderno y Profesional")
     print("🎯 Paleta: Gradientes Azul-Rojo con Efectos Glassmorphism")
