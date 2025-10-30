@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-🎯 SCRIPT INTEGRADO: MAPA DE PELIGRO CON 5 PARÁMETROS
+🎯 SCRIPT INTEGRADO: MAPA DE PELIGRO CON 5 PARÁMETROS + CENTROS POBLADOS
 - Genera automáticamente el shapefile de distancia a ríos desde el DEM
 - Calcula el mapa de peligro combinando: Pendiente + Geomorfología + PP Máxima + Distancia a Ríos + Geología
+- Muestra centros poblados como referencia
 """
 
 import geopandas as gpd
@@ -42,6 +43,7 @@ RUTA_BASE_PPMAX = f"{ruta_base}/DATA/PELIGRO/PP_MAX"
 RUTA_BASE_RIOS = f"{ruta_base}/DATA/PELIGRO/DISTANCIA_RIO"
 RUTA_BASE_GEOLOGIA = f"{ruta_base}/DATA/PELIGRO/GEOLOGIA"
 RUTA_DEM = f"{RUTA_BASE_RIOS}/DEM.tif"
+RUTA_CENTROS_POBLADOS = f"{ruta_base}/DATA/CENTROS POBLADOS/Centros_Poblados_INEI_geogpsperu_SuyoPomalia.shp"
 
 # CONFIGURACIÓN DE GENERACIÓN DE RÍOS
 INTENSIDAD_RIOS = "muy_baja"  # Opciones: "muy_alta", "alta", "media", "baja", "muy_baja"
@@ -614,7 +616,7 @@ def asignar_color_peligro(valor):
         return COLORES_PELIGRO[0]
 
 # ═══════════════════════════════════════════════════════════════════════════
-# 🎯 FUNCIÓN PRINCIPAL CON 5 PARÁMETROS (GENERA RÍOS AUTOMÁTICAMENTE)
+# 🎯 FUNCIÓN PRINCIPAL CON 5 PARÁMETROS + CENTROS POBLADOS
 # ═══════════════════════════════════════════════════════════════════════════
 
 def generar_mapa_peligro(nombre_usuario, departamento_sel, provincia_sel, distrito_sel):
@@ -638,6 +640,22 @@ def generar_mapa_peligro(nombre_usuario, departamento_sel, provincia_sel, distri
     gdf_departamentos = cargar_shapefile("departamento", "Departamentos")
     gdf_provincias = cargar_shapefile("provincia", "Provincias")
     gdf_distritos = cargar_shapefile("distrito", "Distritos del Perú")
+
+    # CARGAR CENTROS POBLADOS
+    print("   🏘️ Cargando centros poblados...")
+    try:
+        if os.path.exists(RUTA_CENTROS_POBLADOS):
+            gdf_centros_pob = gpd.read_file(RUTA_CENTROS_POBLADOS)
+            if gdf_centros_pob.crs is None or gdf_centros_pob.crs.to_epsg() != 4326:
+                gdf_centros_pob.set_crs(epsg=4326, inplace=True)
+            gdf_centros_pob = gdf_centros_pob.to_crs(epsg=3857)
+            print(f"   ✅ Centros poblados cargados: {len(gdf_centros_pob)} puntos")
+        else:
+            print(f"   ⚠️ No se encontró el shapefile de centros poblados")
+            gdf_centros_pob = None
+    except Exception as e:
+        print(f"   ⚠️ Error cargando centros poblados: {e}")
+        gdf_centros_pob = None
 
     try:
         gdf_paises = gpd.read_file(f"{ruta_base}/DATA/MAPA DE UBICACION/PAISES DE SUDAMERICA/Sudamérica.shp").to_crs(3857)
@@ -970,6 +988,51 @@ def generar_mapa_peligro(nombre_usuario, departamento_sel, provincia_sel, distri
     gdf_peligro.plot(ax=ax_main, color=gdf_peligro['COLOR'], edgecolor='black', 
                      linewidth=0.2, alpha=0.7, zorder=4)
     
+    # VISUALIZAR CENTROS POBLADOS
+    if gdf_centros_pob is not None:
+        print("   🏘️ Agregando centros poblados al mapa...")
+        try:
+            # Recortar centros poblados al área del mapa
+            centros_en_mapa = gpd.clip(gdf_centros_pob, gdf_distrito)
+            
+            if len(centros_en_mapa) > 0:
+                # Plotear puntos de centros poblados
+                centros_en_mapa.plot(ax=ax_main, 
+                                    color='#006400',  # Verde oscuro
+                                    edgecolor='white', 
+                                    markersize=40,
+                                    marker='o',
+                                    linewidth=1.0,
+                                    alpha=0.95,
+                                    zorder=10)
+                
+                # Agregar etiquetas de nombres si existe la columna
+                nombre_col = None
+                for col in ['NOMB_CCPP', 'NOMBRE', 'NOMBCCPP', 'CCPP', 'NAME']:
+                    if col in centros_en_mapa.columns:
+                        nombre_col = col
+                        break
+                
+                if nombre_col:
+                    for idx, row in centros_en_mapa.iterrows():
+                        x, y = row.geometry.x, row.geometry.y
+                        nombre = str(row[nombre_col])
+                        ax_main.annotate(nombre, 
+                                       xy=(x, y), 
+                                       xytext=(5, 5),
+                                       textcoords='offset points',
+                                       fontsize=6,
+                                       color='#006400',  # Verde oscuro
+                                       weight='bold',
+                                       path_effects=[path_effects.withStroke(linewidth=2.5, foreground='white')],
+                                       zorder=11)
+                
+                print(f"      ✅ {len(centros_en_mapa)} centros poblados agregados al mapa")
+            else:
+                print(f"      ⚠️ No hay centros poblados en el área del distrito")
+        except Exception as e:
+            print(f"      ⚠️ Error agregando centros poblados: {e}")
+    
     # LÍMITE DISTRITAL
     gdf_distrito.plot(ax=ax_main, facecolor="none", edgecolor="black", 
                      linewidth=1.5, linestyle='-', alpha=1.0, zorder=15)
@@ -1006,7 +1069,10 @@ def generar_mapa_peligro(nombre_usuario, departamento_sel, provincia_sel, distri
         Patch(facecolor='white', edgecolor='white', label='• Distancia a Ríos', linewidth=0),
         Patch(facecolor='white', edgecolor='white', label='• Geología', linewidth=0),
         Patch(facecolor='white', edgecolor='white', label='', linewidth=0),
-        Line2D([0], [0], color='black', lw=1.5, linestyle='-', label='Límite Distrital')
+        Line2D([0], [0], color='black', lw=1.5, linestyle='-', label='Límite Distrital'),
+        Line2D([0], [0], marker='o', color='w', markerfacecolor='#006400',  # Verde oscuro
+               markeredgecolor='white', markersize=7, linestyle='None', 
+               label='Centro Poblado', markeredgewidth=1.0)
     ])
 
     leg = ax_leyenda.legend(handles=legend_elements, loc='center', ncol=1, frameon=True, fontsize=7,
@@ -1065,6 +1131,7 @@ def generar_mapa_peligro(nombre_usuario, departamento_sel, provincia_sel, distri
             print(f"   📂 Ubicación: {ruta_guardado_final}")
             print(f"   📊 Tamaño: {file_size:.2f} MB")
             print(f"   🎯 Parámetros: 5 (Pendiente + Geomorfología + PP Máxima + Distancia a Ríos + Geología)")
+            print(f"   🏘️ Centros poblados: Incluidos")
             print("="*80 + "\n")
             return ruta_guardado_final
         else:
@@ -1077,5 +1144,3 @@ def generar_mapa_peligro(nombre_usuario, departamento_sel, provincia_sel, distri
         traceback.print_exc()
         plt.close(fig)
         return None
-    
-    
